@@ -1,1296 +1,1835 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VaultShare - Secure Universal Archiving</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=JetBrains+Mono:wght=400;500;700&display=swap');
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%);
-        }
-        
-        .code-font {
-            font-family: 'JetBrains Mono', monospace;
-        }
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=JetBrains+Mono:wght=400;500;700&display=swap");
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%);
+      }
+
+      .code-font {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
     </style>
-</head>
-<body class="min-h-screen text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
-
+  </head>
+  <body
+    class="min-h-screen text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white"
+  >
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+    <div
+      id="toast-container"
+      class="fixed top-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"
+    ></div>
 
     <!-- AUTHENTICATION DIALOG MODAL -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-            
-            <!-- Close Button -->
-            <button onclick="toggleAuthModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60 transition-all">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+    <div
+      id="auth-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden"
+    >
+      <div
+        class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
+        <div
+          class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"
+        ></div>
 
-            <!-- User Status Panel (Shown when signed in) -->
-            <div id="auth-signed-in-view" class="hidden space-y-6">
-                <div class="text-center">
-                    <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-500/20">
-                        <i data-lucide="user-check" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-lg font-extrabold text-white">Your Security Identity</h3>
-                    <p class="text-xs text-slate-400 mt-1">You are safely connected to your VaultShare account.</p>
-                </div>
+        <!-- Close Button -->
+        <button
+          onclick="toggleAuthModal(false)"
+          class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60 transition-all"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
 
-                <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800/80 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500">Sign-in Provider</span>
-                        <span id="auth-profile-provider" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400">Anonymous</span>
-                    </div>
-                    <hr class="border-slate-800">
-                    <div class="space-y-1">
-                        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">User Email / Reference</span>
-                        <span id="auth-profile-id" class="text-xs code-font text-slate-200 block truncate">guest-session-id</span>
-                    </div>
-                </div>
-
-                <button onclick="triggerSignOut()" class="w-full py-3 px-4 rounded-xl border border-red-900/40 hover:border-red-500 bg-red-950/20 hover:bg-red-950/40 text-red-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2">
-                    <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out of Session
-                </button>
+        <!-- User Status Panel (Shown when signed in) -->
+        <div id="auth-signed-in-view" class="hidden space-y-6">
+          <div class="text-center">
+            <div
+              class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-500/20"
+            >
+              <i data-lucide="user-check" class="w-8 h-8"></i>
             </div>
+            <h3 class="text-lg font-extrabold text-white">
+              Your Security Identity
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">
+              You are safely connected to your VaultShare account.
+            </p>
+          </div>
 
-            <!-- Authenticate Forms (Shown when guest/anonymous) -->
-            <div id="auth-forms-view" class="space-y-6">
-                <div class="text-center">
-                    <h3 class="text-xl font-extrabold text-white">Secure Identity Node</h3>
-                    <p class="text-xs text-slate-400 mt-1">Unlock cloud-sync capabilities and multi-device private backups.</p>
-                </div>
-
-                <!-- Tabs switcher -->
-                <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
-                    <button id="auth-tab-login" onclick="toggleAuthTab('login')" class="py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white">Sign In</button>
-                    <button id="auth-tab-register" onclick="toggleAuthTab('register')" class="py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">Register</button>
-                </div>
-
-                <!-- Inputs block -->
-                <form id="auth-credentials-form" onsubmit="handleCredentialsAuth(event)" class="space-y-4">
-                    <div class="space-y-1.5">
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Address</label>
-                        <input type="email" id="auth-email" required placeholder="name@domain.com" 
-                            class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all">
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Password</label>
-                        <input type="password" id="auth-password" required placeholder="Minimum 6 characters" minlength="6"
-                            class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all">
-                    </div>
-
-                    <button type="submit" id="auth-submit-btn" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-xs tracking-wider uppercase text-white shadow-lg shadow-indigo-500/10 transition-all flex items-center justify-center gap-2">
-                        <span id="auth-submit-text">Verify & Connect</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </form>
-
-                <!-- Third Party OAuth Provider -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3">
-                        <span class="h-px bg-slate-800 flex-grow"></span>
-                        <span class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Or Continue with</span>
-                        <span class="h-px bg-slate-800 flex-grow"></span>
-                    </div>
-
-                    <button onclick="triggerGoogleSignIn()" class="w-full py-3 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-center gap-2.5 text-xs font-bold text-slate-200">
-                        <!-- Google Logo SVG -->
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-                            <g transform="matrix(1, 0, 0, 1, 0, 0)">
-                                <path d="M21.35,11.1H12v2.7h5.38C16.88,15.6,14.85,17,12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5c1.23,0,2.35,0.45,3.22,1.2l2.02-2.02C15.54,4.64,13.89,4,12,4C7.58,4,4,7.58,4,12s3.58,8,8,8c4.6,0,7.62-3.23,7.62-7.78C19.62,11.75,19.5,11.41,21.35,11.1z" fill="#4285F4" />
-                            </g>
-                        </svg>
-                        <span>Google Security Authentication</span>
-                    </button>
-                </div>
+          <div
+            class="bg-slate-950 rounded-2xl p-4 border border-slate-800/80 space-y-3"
+          >
+            <div class="flex justify-between items-center">
+              <span
+                class="text-[10px] uppercase font-bold tracking-wider text-slate-500"
+                >Sign-in Provider</span
+              >
+              <span
+                id="auth-profile-provider"
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400"
+                >Anonymous</span
+              >
             </div>
+            <hr class="border-slate-800" />
+            <div class="space-y-1">
+              <span
+                class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block"
+                >User Email / Reference</span
+              >
+              <span
+                id="auth-profile-id"
+                class="text-xs code-font text-slate-200 block truncate"
+                >guest-session-id</span
+              >
+            </div>
+          </div>
+
+          <button
+            onclick="triggerSignOut()"
+            class="w-full py-3 px-4 rounded-xl border border-red-900/40 hover:border-red-500 bg-red-950/20 hover:bg-red-950/40 text-red-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2"
+          >
+            <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out of Session
+          </button>
         </div>
+
+        <!-- Authenticate Forms (Shown when guest/anonymous) -->
+        <div id="auth-forms-view" class="space-y-6">
+          <div class="text-center">
+            <h3 class="text-xl font-extrabold text-white">
+              Secure Identity Node
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Unlock cloud-sync capabilities and multi-device private backups.
+            </p>
+          </div>
+
+          <!-- Tabs switcher -->
+          <div
+            class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80"
+          >
+            <button
+              id="auth-tab-login"
+              onclick="toggleAuthTab('login')"
+              class="py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white"
+            >
+              Sign In
+            </button>
+            <button
+              id="auth-tab-register"
+              onclick="toggleAuthTab('register')"
+              class="py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white"
+            >
+              Register
+            </button>
+          </div>
+
+          <!-- Inputs block -->
+          <form
+            id="auth-credentials-form"
+            onsubmit="handleCredentialsAuth(event)"
+            class="space-y-4"
+          >
+            <div class="space-y-1.5">
+              <label
+                class="block text-[10px] font-bold uppercase tracking-wider text-slate-400"
+                >Email Address</label
+              >
+              <input
+                type="email"
+                id="auth-email"
+                required
+                placeholder="name@domain.com"
+                class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label
+                class="block text-[10px] font-bold uppercase tracking-wider text-slate-400"
+                >Password</label
+              >
+              <input
+                type="password"
+                id="auth-password"
+                required
+                placeholder="Minimum 6 characters"
+                minlength="6"
+                class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition-all"
+              />
+            </div>
+
+            <button
+              type="submit"
+              id="auth-submit-btn"
+              class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-xs tracking-wider uppercase text-white shadow-lg shadow-indigo-500/10 transition-all flex items-center justify-center gap-2"
+            >
+              <span id="auth-submit-text">Verify & Connect</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </form>
+
+          <!-- Third Party OAuth Provider -->
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <span class="h-px bg-slate-800 flex-grow"></span>
+              <span
+                class="text-[10px] font-bold tracking-wider text-slate-500 uppercase"
+                >Or Continue with</span
+              >
+              <span class="h-px bg-slate-800 flex-grow"></span>
+            </div>
+
+            <button
+              onclick="triggerGoogleSignIn()"
+              class="w-full py-3 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-center gap-2.5 text-xs font-bold text-slate-200"
+            >
+              <!-- Google Logo SVG -->
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g transform="matrix(1, 0, 0, 1, 0, 0)">
+                  <path
+                    d="M21.35,11.1H12v2.7h5.38C16.88,15.6,14.85,17,12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5c1.23,0,2.35,0.45,3.22,1.2l2.02-2.02C15.54,4.64,13.89,4,12,4C7.58,4,4,7.58,4,12s3.58,8,8,8c4.6,0,7.62-3.23,7.62-7.78C19.62,11.75,19.5,11.41,21.35,11.1z"
+                    fill="#4285F4"
+                  />
+                </g>
+              </svg>
+              <span>Google Security Authentication</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Main Navigation Header -->
-    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <i data-lucide="archive" class="w-5 h-5 text-white"></i>
-                </div>
-                <div>
-                    <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">VaultShare</span>
-                    <span class="block text-[10px] text-indigo-400 font-semibold tracking-wider uppercase -mt-1">Secure Archiver</span>
-                </div>
-            </div>
-
-            <!-- Header Actions / Info -->
-            <div class="flex items-center gap-3 sm:gap-4">
-                <div onclick="toggleAuthModal(true)" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 text-xs cursor-pointer transition-all select-none">
-                    <span id="user-status-lamp" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span id="user-display-id" class="code-font text-slate-300 max-w-[90px] sm:max-w-[150px] truncate">Initializing...</span>
-                    <i data-lucide="user-cog" class="w-3.5 h-3.5 text-slate-400"></i>
-                </div>
-                <div class="flex items-center gap-1 sm:gap-2">
-                    <button onclick="navigateTo('home')" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5" data-tab="home">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span class="hidden md:inline">Create</span>
-                    </button>
-                    <button onclick="navigateTo('vault')" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5" data-tab="vault">
-                        <i data-lucide="folder" class="w-4 h-4"></i> <span class="hidden md:inline">My Vault</span>
-                    </button>
-                    <button onclick="navigateTo('feed')" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5" data-tab="feed">
-                        <i data-lucide="globe" class="w-4 h-4"></i> <span class="hidden md:inline">Public Hub</span>
-                    </button>
-                </div>
-            </div>
+    <header
+      class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-40 transition-all duration-300"
+    >
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+      >
+        <div
+          class="flex items-center gap-3 cursor-pointer"
+          onclick="navigateTo('home')"
+        >
+          <div
+            class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"
+          >
+            <i data-lucide="archive" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <span
+              class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent"
+              >VaultShare</span
+            >
+            <span
+              class="block text-[10px] text-indigo-400 font-semibold tracking-wider uppercase -mt-1"
+              >Secure Archiver</span
+            >
+          </div>
         </div>
+
+        <!-- Header Actions / Info -->
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div
+            onclick="toggleAuthModal(true)"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 text-xs cursor-pointer transition-all select-none"
+          >
+            <span
+              id="user-status-lamp"
+              class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+            ></span>
+            <span
+              id="user-display-id"
+              class="code-font text-slate-300 max-w-[90px] sm:max-w-[150px] truncate"
+              >Initializing...</span
+            >
+            <i data-lucide="user-cog" class="w-3.5 h-3.5 text-slate-400"></i>
+          </div>
+          <div class="flex items-center gap-1 sm:gap-2">
+            <button
+              onclick="navigateTo('home')"
+              class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5"
+              data-tab="home"
+            >
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span class="hidden md:inline">Create</span>
+            </button>
+            <button
+              onclick="navigateTo('vault')"
+              class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5"
+              data-tab="vault"
+            >
+              <i data-lucide="folder" class="w-4 h-4"></i>
+              <span class="hidden md:inline">My Vault</span>
+            </button>
+            <button
+              onclick="navigateTo('feed')"
+              class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all flex items-center gap-1.5"
+              data-tab="feed"
+            >
+              <i data-lucide="globe" class="w-4 h-4"></i>
+              <span class="hidden md:inline">Public Hub</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- Main Content Area -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- Banner Alert: Storage Status & Active Usage limits -->
-        <div class="mb-8 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/30 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="flex items-start gap-3">
-                <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg shrink-0 mt-0.5 sm:mt-0">
-                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-slate-200 text-sm">Automated Antispam & Abuse Protection</h3>
-                    <p class="text-xs text-slate-400 mt-1">Individual uploads are restricted to <strong class="text-indigo-300">750 KB</strong>. Each account is limited to <strong class="text-indigo-300">30 active slots</strong> and a rolling hourly throttle.</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                <div class="bg-slate-950/60 rounded-xl px-4 py-2 border border-slate-800 text-center w-full sm:w-auto flex-grow sm:flex-grow-0">
-                    <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Your Slots</div>
-                    <div class="text-sm font-extrabold text-slate-200 mt-0.5"><span id="active-slots-count">0</span> / 30</div>
-                </div>
-                <div class="bg-slate-950/60 rounded-xl px-4 py-2 border border-slate-800 text-center w-full sm:w-auto flex-grow sm:flex-grow-0">
-                    <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Storage Provider</div>
-                    <div id="storage-mode-badge" class="text-xs font-semibold text-amber-400 mt-0.5">Connecting...</div>
-                </div>
-            </div>
+      <!-- Banner Alert: Storage Status & Active Usage limits -->
+      <div
+        class="mb-8 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/30 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg shrink-0 mt-0.5 sm:mt-0"
+          >
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-slate-200 text-sm">
+              Automated Antispam & Abuse Protection
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Individual uploads are restricted to
+              <strong class="text-indigo-300">750 KB</strong>. Each account is
+              limited to
+              <strong class="text-indigo-300">30 active slots</strong> and a
+              rolling hourly throttle.
+            </p>
+          </div>
         </div>
-
-        <!-- ================= PAGE: CREATE ARCHIVE ================= -->
-        <div id="page-home" class="page-view grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Left Side: Interactive Upload / Creator Panel -->
-            <div class="lg:col-span-7 space-y-6">
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-                    
-                    <div class="mb-6">
-                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                            <i data-lucide="file-plus-2" class="text-indigo-400 w-5 h-5"></i>
-                            Archive New Resource
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-1">Select your archiving format and load your payload.</p>
-                    </div>
-
-                    <!-- Input: Title -->
-                    <div class="space-y-2 mb-6">
-                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Archive Title</label>
-                        <input type="text" id="archive-title" placeholder="Give this archive a descriptive title..." 
-                            class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all">
-                    </div>
-
-                    <!-- Archive Type Switcher Tabs -->
-                    <div class="mb-6">
-                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Content Type</label>
-                        <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                            <button onclick="setArchiveType('text')" id="tab-type-text" class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow-md">
-                                <i data-lucide="file-text" class="w-4 h-4"></i> Text & Notes
-                            </button>
-                            <button onclick="setArchiveType('link')" id="tab-type-link" class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white">
-                                <i data-lucide="link-2" class="w-4 h-4"></i> Link / URL
-                            </button>
-                            <button onclick="setArchiveType('file')" id="tab-type-file" class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white">
-                                <i data-lucide="upload-cloud" class="w-4 h-4"></i> File Upload
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Payload Sections -->
-                    <div class="space-y-4 mb-6">
-                        <!-- Payload Area: TEXT -->
-                        <div id="payload-text-container" class="payload-panel space-y-2">
-                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Archived Code or Text Content</label>
-                            <textarea id="archive-text-content" rows="8" placeholder="Paste your markdown, code snippets, logs, recipes, or general notes here..." 
-                                class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-4 text-sm text-slate-200 placeholder-slate-500 outline-none transition-all code-font resize-y"></textarea>
-                        </div>
-
-                        <!-- Payload Area: LINK -->
-                        <div id="payload-link-container" class="payload-panel hidden space-y-2">
-                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Target URL</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                                    <i data-lucide="globe-2" class="w-4 h-4"></i>
-                                </div>
-                                <input type="url" id="archive-link-content" placeholder="https://example.com/useful-article" 
-                                    class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all code-font">
-                            </div>
-                            <p class="text-[11px] text-slate-400">VaultShare redirects users straight to this source, while archiving your original target mapping permanently.</p>
-                        </div>
-
-                        <!-- Payload Area: FILE -->
-                        <div id="payload-file-container" class="payload-panel hidden space-y-2">
-                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Local File Upload</label>
-                            
-                            <!-- Custom File Dropzone -->
-                            <div id="file-dropzone" class="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 bg-slate-950/60 rounded-2xl p-8 text-center cursor-pointer transition-all relative group overflow-hidden">
-                                <input type="file" id="file-input" class="hidden">
-                                <div class="space-y-3 relative z-10">
-                                    <div class="mx-auto w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:scale-110 transition-all">
-                                        <i data-lucide="file-up" class="w-6 h-6"></i>
-                                    </div>
-                                    <div class="text-sm">
-                                        <span class="text-indigo-400 font-bold hover:underline">Click to browse</span> or drag and drop your file here
-                                    </div>
-                                    <p class="text-xs text-slate-500">Supports images, PDFs, text, JSON, logs, ZIP archives up to 750 KB</p>
-                                </div>
-                            </div>
-
-                            <!-- Selected File Information Block -->
-                            <div id="selected-file-card" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                                <div class="flex items-center gap-3 overflow-hidden">
-                                    <div class="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg">
-                                        <i data-lucide="paperclip" class="w-5 h-5"></i>
-                                    </div>
-                                    <div class="overflow-hidden">
-                                        <h4 id="selected-file-name" class="font-bold text-xs text-slate-200 truncate">document.pdf</h4>
-                                        <p id="selected-file-size" class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">0 KB</p>
-                                    </div>
-                                </div>
-                                <button onclick="resetSelectedFile()" class="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-red-400 transition-all">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Visibility Configurator -->
-                    <div class="mb-8">
-                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Visibility Permissions</label>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="visibility" value="public" checked class="peer sr-only">
-                                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1">
-                                    <div class="flex items-center gap-2 text-slate-300 peer-checked:text-white">
-                                        <i data-lucide="globe" class="w-4 h-4 text-emerald-400"></i>
-                                        <span class="text-xs font-bold">Public Hub</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 leading-normal">Listed on the community feed for discovery.</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="visibility" value="unlisted" class="peer sr-only">
-                                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1">
-                                    <div class="flex items-center gap-2 text-slate-300 peer-checked:text-white">
-                                        <i data-lucide="link" class="w-4 h-4 text-amber-400"></i>
-                                        <span class="text-xs font-bold">Unlisted Link</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 leading-normal">Not searchable. Accessible only with a direct link.</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="visibility" value="private" class="peer sr-only">
-                                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1">
-                                    <div class="flex items-center gap-2 text-slate-300 peer-checked:text-white">
-                                        <i data-lucide="lock" class="w-4 h-4 text-purple-400"></i>
-                                        <span class="text-xs font-bold">Private Vault</span>
-                                    </div>
-                                    <span class="text-[10px] text-slate-500 leading-normal">Encrypted securely. Visible strictly to you.</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Trigger Action Button -->
-                    <button onclick="handlePublishArchive()" id="publish-btn" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 font-bold text-sm text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group">
-                        <span>Compile & Archive Resource</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-                    </button>
-                </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto shrink-0">
+          <div
+            class="bg-slate-950/60 rounded-xl px-4 py-2 border border-slate-800 text-center w-full sm:w-auto flex-grow sm:flex-grow-0"
+          >
+            <div
+              class="text-[10px] uppercase tracking-wider text-slate-500 font-bold"
+            >
+              Your Slots
             </div>
-
-            <!-- Right Side: Realtime Stats & Archiving Guides -->
-            <div class="lg:col-span-5 space-y-6">
-                <!-- Info Section: Realtime System Status -->
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md">
-                    <h3 class="font-bold text-slate-200 text-sm mb-4 flex items-center gap-2">
-                        <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i>
-                        Vault Diagnostics
-                    </h3>
-                    <div class="space-y-3.5">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400">Archiving Nodes</span>
-                            <span class="font-semibold text-slate-200 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Global CDN Active
-                            </span>
-                        </div>
-                        <hr class="border-slate-800">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400">Compression Engine</span>
-                            <span class="font-semibold text-slate-200 code-font">Base64 Binary Safe</span>
-                        </div>
-                        <hr class="border-slate-800">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400">Max File Size Limit</span>
-                            <span class="font-semibold text-slate-200">750 KB</span>
-                        </div>
-                        <hr class="border-slate-800">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400">Active Rate-Limit Guard</span>
-                            <span class="font-semibold text-rose-400 flex items-center gap-1">
-                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Strict 10 uploads/hr
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Guide Checklist Card -->
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md">
-                    <h3 class="font-bold text-slate-200 text-sm mb-4 flex items-center gap-2">
-                        <i data-lucide="compass" class="w-4 h-4 text-purple-400"></i>
-                        How does sharing work?
-                    </h3>
-                    <ul class="space-y-3 text-xs text-slate-400">
-                        <li class="flex gap-2.5">
-                            <div class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                            <span>Write, upload, or paste a web address, choose visibility options, and hit archive.</span>
-                        </li>
-                        <li class="flex gap-2.5">
-                            <div class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                            <span>Once archived, a unique share link is generated. Clicking this will fetch the resource instantaneously.</span>
-                        </li>
-                        <li class="flex gap-2.5">
-                            <div class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                            <span>If it's **Public**, it lands automatically on the community feed for others to interact, download, or clone!</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Creator Quick List preview -->
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                            <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
-                            Recent Local Archives
-                        </h3>
-                        <button onclick="navigateTo('vault')" class="text-xs text-indigo-400 hover:underline">View All</button>
-                    </div>
-                    <div id="quick-recent-list" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-                        <!-- Populated dynamically -->
-                        <div class="text-center py-6 text-xs text-slate-500">No active archives stored. Create one above!</div>
-                    </div>
-                </div>
+            <div class="text-sm font-extrabold text-slate-200 mt-0.5">
+              <span id="active-slots-count">0</span> / 30
             </div>
+          </div>
+          <div
+            class="bg-slate-950/60 rounded-xl px-4 py-2 border border-slate-800 text-center w-full sm:w-auto flex-grow sm:flex-grow-0"
+          >
+            <div
+              class="text-[10px] uppercase tracking-wider text-slate-500 font-bold"
+            >
+              Storage Provider
+            </div>
+            <div
+              id="storage-mode-badge"
+              class="text-xs font-semibold text-amber-400 mt-0.5"
+            >
+              Connecting...
+            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- ================= PAGE: MY VAULT ================= -->
-        <div id="page-vault" class="page-view hidden space-y-6">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                        <i data-lucide="folder" class="w-6 h-6 text-indigo-400"></i>
-                        Personal Storage Vault
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1">Manage and access all archives belonging securely to your unique identifier code.</p>
-                </div>
-                <!-- Filtering Sub-Actions -->
-                <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 self-stretch sm:self-auto">
-                    <button onclick="filterVault('all')" id="vault-filter-all" class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all">All</button>
-                    <button onclick="filterVault('public')" id="vault-filter-public" class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">Public</button>
-                    <button onclick="filterVault('unlisted')" id="vault-filter-unlisted" class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">Unlisted</button>
-                    <button onclick="filterVault('private')" id="vault-filter-private" class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">Private</button>
-                </div>
+      <!-- ================= PAGE: CREATE ARCHIVE ================= -->
+      <div
+        id="page-home"
+        class="page-view grid grid-cols-1 lg:grid-cols-12 gap-8"
+      >
+        <!-- Left Side: Interactive Upload / Creator Panel -->
+        <div class="lg:col-span-7 space-y-6">
+          <div
+            class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md relative overflow-hidden"
+          >
+            <div
+              class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none"
+            ></div>
+
+            <div class="mb-6">
+              <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i
+                  data-lucide="file-plus-2"
+                  class="text-indigo-400 w-5 h-5"
+                ></i>
+                Archive New Resource
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">
+                Select your archiving format and load your payload.
+              </p>
             </div>
 
-            <!-- Dashboard Grid of Archives -->
-            <div id="vault-archives-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Populated dynamically -->
-            </div>
-        </div>
-
-        <!-- ================= PAGE: PUBLIC HUB ================= -->
-        <div id="page-feed" class="page-view hidden space-y-6">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                        <i data-lucide="globe" class="w-6 h-6 text-indigo-400"></i>
-                        Public Discovery Hub
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-1">Explore and access public repositories, helpful resources, and shared data nodes published globally.</p>
-                </div>
-                <!-- Dynamic Search Node -->
-                <div class="relative w-full md:w-80">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                        <i data-lucide="search" class="w-4 h-4"></i>
-                    </div>
-                    <input type="text" id="feed-search" oninput="handleFeedSearch()" placeholder="Search titles, metadata..." 
-                        class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 outline-none transition-all">
-                </div>
+            <!-- Input: Title -->
+            <div class="space-y-2 mb-6">
+              <label
+                class="block text-xs font-bold text-slate-300 uppercase tracking-wider"
+                >Archive Title</label
+              >
+              <input
+                type="text"
+                id="archive-title"
+                placeholder="Give this archive a descriptive title..."
+                class="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+              />
             </div>
 
-            <!-- Public Grid -->
-            <div id="feed-archives-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Populated dynamically -->
-            </div>
-        </div>
-
-        <!-- ================= PAGE: ARCHIVE DETAILED INTERACTIVE VIEWER ================= -->
-        <div id="page-viewer" class="page-view hidden space-y-6">
-            <!-- Navigation Back Header -->
-            <div class="flex items-center justify-between">
-                <button onclick="navigateTo('home')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all flex items-center gap-2">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Safety
+            <!-- Archive Type Switcher Tabs -->
+            <div class="mb-6">
+              <label
+                class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2"
+                >Content Type</label
+              >
+              <div
+                class="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800"
+              >
+                <button
+                  onclick="setArchiveType('text')"
+                  id="tab-type-text"
+                  class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow-md"
+                >
+                  <i data-lucide="file-text" class="w-4 h-4"></i> Text & Notes
                 </button>
-                <div class="flex items-center gap-2">
-                    <button id="viewer-action-share" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all flex items-center gap-1.5">
-                        <i data-lucide="share-2" class="w-4 h-4"></i> Copy Link
-                    </button>
-                </div>
+                <button
+                  onclick="setArchiveType('link')"
+                  id="tab-type-link"
+                  class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white"
+                >
+                  <i data-lucide="link-2" class="w-4 h-4"></i> Link / URL
+                </button>
+                <button
+                  onclick="setArchiveType('file')"
+                  id="tab-type-file"
+                  class="type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white"
+                >
+                  <i data-lucide="upload-cloud" class="w-4 h-4"></i> File Upload
+                </button>
+              </div>
             </div>
 
-            <!-- Core Metadata Panel of Archived item -->
-            <div class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-start gap-3.5">
-                        <div id="viewer-icon" class="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-2xl shrink-0 mt-1">
-                            <!-- Icon populated dynamically -->
-                        </div>
-                        <div>
-                            <span id="viewer-type-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-300">File Type</span>
-                            <h1 id="viewer-title" class="text-xl sm:text-2xl font-bold text-white mt-1.5">Loading document title...</h1>
-                            <div class="flex items-center gap-4 text-xs text-slate-400 mt-2 flex-wrap">
-                                <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> Owner: <span id="viewer-owner-id" class="code-font text-slate-300 text-[11px]">Loading...</span></span>
-                                <span class="hidden sm:inline-block text-slate-700">•</span>
-                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Archived: <span id="viewer-timestamp">Loading...</span></span>
-                                <span class="hidden sm:inline-block text-slate-700">•</span>
-                                <span id="viewer-visibility-indicator" class="flex items-center gap-1"></span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Dynamic Payload Sections -->
+            <div class="space-y-4 mb-6">
+              <!-- Payload Area: TEXT -->
+              <div id="payload-text-container" class="payload-panel space-y-2">
+                <label
+                  class="block text-xs font-bold text-slate-300 uppercase tracking-wider"
+                  >Archived Code or Text Content</label
+                >
+                <textarea
+                  id="archive-text-content"
+                  rows="8"
+                  placeholder="Paste your markdown, code snippets, logs, recipes, or general notes here..."
+                  class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-4 text-sm text-slate-200 placeholder-slate-500 outline-none transition-all code-font resize-y"
+                ></textarea>
+              </div>
 
-                    <!-- Direct File Downloader block (Shown conditionally) -->
-                    <div id="viewer-file-meta-download" class="hidden flex items-center gap-3 bg-slate-950/80 rounded-2xl p-4 border border-slate-800/80 self-stretch sm:self-auto">
-                        <div class="text-right">
-                            <p id="viewer-file-meta-name" class="text-xs font-bold text-slate-200 truncate max-w-[150px]">data-file.png</p>
-                            <p id="viewer-file-meta-size" class="text-[10px] text-slate-400 mt-0.5">0 KB</p>
-                        </div>
-                        <a id="viewer-download-btn" href="" download="" class="p-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/20 transition-all shrink-0">
-                            <i data-lucide="download" class="w-5 h-5"></i>
-                        </a>
+              <!-- Payload Area: LINK -->
+              <div
+                id="payload-link-container"
+                class="payload-panel hidden space-y-2"
+              >
+                <label
+                  class="block text-xs font-bold text-slate-300 uppercase tracking-wider"
+                  >Target URL</label
+                >
+                <div class="relative">
+                  <div
+                    class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500"
+                  >
+                    <i data-lucide="globe-2" class="w-4 h-4"></i>
+                  </div>
+                  <input
+                    type="url"
+                    id="archive-link-content"
+                    placeholder="https://example.com/useful-article"
+                    class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition-all code-font"
+                  />
+                </div>
+                <p class="text-[11px] text-slate-400">
+                  VaultShare redirects users straight to this source, while
+                  archiving your original target mapping permanently.
+                </p>
+              </div>
+
+              <!-- Payload Area: FILE -->
+              <div
+                id="payload-file-container"
+                class="payload-panel hidden space-y-2"
+              >
+                <label
+                  class="block text-xs font-bold text-slate-300 uppercase tracking-wider"
+                  >Local File Upload</label
+                >
+
+                <!-- Custom File Dropzone -->
+                <div
+                  id="file-dropzone"
+                  class="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 bg-slate-950/60 rounded-2xl p-8 text-center cursor-pointer transition-all relative group overflow-hidden"
+                >
+                  <input type="file" id="file-input" class="hidden" />
+                  <div class="space-y-3 relative z-10">
+                    <div
+                      class="mx-auto w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:scale-110 transition-all"
+                    >
+                      <i data-lucide="file-up" class="w-6 h-6"></i>
                     </div>
+                    <div class="text-sm">
+                      <span class="text-indigo-400 font-bold hover:underline"
+                        >Click to browse</span
+                      >
+                      or drag and drop your file here
+                    </div>
+                    <p class="text-xs text-slate-500">
+                      Supports images, PDFs, text, JSON, logs, ZIP archives up
+                      to 750 KB
+                    </p>
+                  </div>
                 </div>
 
-                <!-- Dynamic Content Container depending on payload type -->
-                <div class="border border-slate-800 bg-slate-950 rounded-2xl overflow-hidden relative min-h-[250px] flex flex-col justify-between">
-                    <!-- Top control bar of the content frame -->
-                    <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
-                        <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Archive Payload Content</span>
-                        <button id="viewer-copy-payload-btn" class="text-slate-400 hover:text-white flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-all">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Contents
-                        </button>
+                <!-- Selected File Information Block -->
+                <div
+                  id="selected-file-card"
+                  class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between"
+                >
+                  <div class="flex items-center gap-3 overflow-hidden">
+                    <div
+                      class="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg"
+                    >
+                      <i data-lucide="paperclip" class="w-5 h-5"></i>
                     </div>
-
-                    <!-- Primary content rendering view (Changes automatically depending on format) -->
-                    <div class="p-6 flex-grow flex flex-col justify-center">
-                        <!-- Content Render Slot: Text -->
-                        <div id="viewer-content-text" class="hidden text-slate-200 code-font text-sm whitespace-pre-wrap leading-relaxed overflow-x-auto">
-                            <!-- Populated dynamically -->
-                        </div>
-
-                        <!-- Content Render Slot: Link redirection mapping -->
-                        <div id="viewer-content-link" class="hidden text-center py-8 space-y-4">
-                            <div class="mx-auto w-16 h-16 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                                <i data-lucide="external-link" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-slate-200 text-lg">Mapped External Destination URL</h3>
-                            <p class="text-xs text-slate-400 max-w-md mx-auto">This archive is designed to map to an external site. Click below to safety redirect onto the destination.</p>
-                            <a id="viewer-destination-url-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-slate-100 rounded-xl text-xs font-bold transition-all">
-                                <span id="viewer-destination-text" class="truncate max-w-xs">https://example.com</span>
-                                <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-                            </a>
-                        </div>
-
-                        <!-- Content Render Slot: Inline Media Renderer (Images) -->
-                        <div id="viewer-content-media" class="hidden flex flex-col items-center justify-center p-2">
-                            <img id="viewer-media-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Archived Preview" class="max-h-[500px] w-auto max-w-full rounded-xl border border-slate-800 shadow-xl bg-slate-900 object-contain">
-                        </div>
-
-                        <!-- Content Render Slot: Unsupported Non-image files -->
-                        <div id="viewer-content-unsupported-file" class="hidden text-center py-8 space-y-3">
-                            <div class="mx-auto w-16 h-16 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">
-                                <i data-lucide="file-warning" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-slate-200 text-lg">Direct Preview Unavailable</h3>
-                            <p class="text-xs text-slate-400 max-w-md mx-auto">This file type can not be natively rendered in the browser preview. Use the trigger button on the top right to download this asset directly to your device.</p>
-                        </div>
+                    <div class="overflow-hidden">
+                      <h4
+                        id="selected-file-name"
+                        class="font-bold text-xs text-slate-200 truncate"
+                      >
+                        document.pdf
+                      </h4>
+                      <p
+                        id="selected-file-size"
+                        class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5"
+                      >
+                        0 KB
+                      </p>
                     </div>
+                  </div>
+                  <button
+                    onclick="resetSelectedFile()"
+                    class="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-red-400 transition-all"
+                  >
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
                 </div>
+              </div>
             </div>
+
+            <!-- Visibility Configurator -->
+            <div class="mb-8">
+              <label
+                class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-3"
+                >Visibility Permissions</label
+              >
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="public"
+                    checked
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1"
+                  >
+                    <div
+                      class="flex items-center gap-2 text-slate-300 peer-checked:text-white"
+                    >
+                      <i
+                        data-lucide="globe"
+                        class="w-4 h-4 text-emerald-400"
+                      ></i>
+                      <span class="text-xs font-bold">Public Hub</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 leading-normal"
+                      >Listed on the community feed for discovery.</span
+                    >
+                  </div>
+                </label>
+
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="unlisted"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1"
+                  >
+                    <div
+                      class="flex items-center gap-2 text-slate-300 peer-checked:text-white"
+                    >
+                      <i data-lucide="link" class="w-4 h-4 text-amber-400"></i>
+                      <span class="text-xs font-bold">Unlisted Link</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 leading-normal"
+                      >Not searchable. Accessible only with a direct link.</span
+                    >
+                  </div>
+                </label>
+
+                <label class="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    value="private"
+                    class="peer sr-only"
+                  />
+                  <div
+                    class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/20 transition-all flex flex-col h-full gap-1"
+                  >
+                    <div
+                      class="flex items-center gap-2 text-slate-300 peer-checked:text-white"
+                    >
+                      <i data-lucide="lock" class="w-4 h-4 text-purple-400"></i>
+                      <span class="text-xs font-bold">Private Vault</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 leading-normal"
+                      >Encrypted securely. Visible strictly to you.</span
+                    >
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Trigger Action Button -->
+            <button
+              onclick="handlePublishArchive()"
+              id="publish-btn"
+              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 font-bold text-sm text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 group"
+            >
+              <span>Compile & Archive Resource</span>
+              <i
+                data-lucide="arrow-right"
+                class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+              ></i>
+            </button>
+          </div>
         </div>
+
+        <!-- Right Side: Realtime Stats & Archiving Guides -->
+        <div class="lg:col-span-5 space-y-6">
+          <!-- Info Section: Realtime System Status -->
+          <div
+            class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md"
+          >
+            <h3
+              class="font-bold text-slate-200 text-sm mb-4 flex items-center gap-2"
+            >
+              <i data-lucide="activity" class="w-4 h-4 text-indigo-400"></i>
+              Vault Diagnostics
+            </h3>
+            <div class="space-y-3.5">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">Archiving Nodes</span>
+                <span
+                  class="font-semibold text-slate-200 flex items-center gap-1.5"
+                >
+                  <span
+                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"
+                  ></span>
+                  Global CDN Active
+                </span>
+              </div>
+              <hr class="border-slate-800" />
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">Compression Engine</span>
+                <span class="font-semibold text-slate-200 code-font"
+                  >Base64 Binary Safe</span
+                >
+              </div>
+              <hr class="border-slate-800" />
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">Max File Size Limit</span>
+                <span class="font-semibold text-slate-200">750 KB</span>
+              </div>
+              <hr class="border-slate-800" />
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">Active Rate-Limit Guard</span>
+                <span
+                  class="font-semibold text-rose-400 flex items-center gap-1"
+                >
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Strict
+                  10 uploads/hr
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guide Checklist Card -->
+          <div
+            class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md"
+          >
+            <h3
+              class="font-bold text-slate-200 text-sm mb-4 flex items-center gap-2"
+            >
+              <i data-lucide="compass" class="w-4 h-4 text-purple-400"></i>
+              How does sharing work?
+            </h3>
+            <ul class="space-y-3 text-xs text-slate-400">
+              <li class="flex gap-2.5">
+                <div
+                  class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0"
+                >
+                  <i data-lucide="check" class="w-3 h-3"></i>
+                </div>
+                <span
+                  >Write, upload, or paste a web address, choose visibility
+                  options, and hit archive.</span
+                >
+              </li>
+              <li class="flex gap-2.5">
+                <div
+                  class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0"
+                >
+                  <i data-lucide="check" class="w-3 h-3"></i>
+                </div>
+                <span
+                  >Once archived, a unique share link is generated. Clicking
+                  this will fetch the resource instantaneously.</span
+                >
+              </li>
+              <li class="flex gap-2.5">
+                <div
+                  class="mt-0.5 rounded-full bg-indigo-500/20 p-1 text-indigo-400 shrink-0"
+                >
+                  <i data-lucide="check" class="w-3 h-3"></i>
+                </div>
+                <span
+                  >If it's **Public**, it lands automatically on the community
+                  feed for others to interact, download, or clone!</span
+                >
+              </li>
+            </ul>
+          </div>
+
+          <!-- Creator Quick List preview -->
+          <div
+            class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 backdrop-blur-md"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="font-bold text-slate-200 text-sm flex items-center gap-2"
+              >
+                <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+                Recent Local Archives
+              </h3>
+              <button
+                onclick="navigateTo('vault')"
+                class="text-xs text-indigo-400 hover:underline"
+              >
+                View All
+              </button>
+            </div>
+            <div
+              id="quick-recent-list"
+              class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1"
+            >
+              <!-- Populated dynamically -->
+              <div class="text-center py-6 text-xs text-slate-500">
+                No active archives stored. Create one above!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE: MY VAULT ================= -->
+      <div id="page-vault" class="page-view hidden space-y-6">
+        <div
+          class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        >
+          <div>
+            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="folder" class="w-6 h-6 text-indigo-400"></i>
+              Personal Storage Vault
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Manage and access all archives belonging securely to your unique
+              identifier code.
+            </p>
+          </div>
+          <!-- Filtering Sub-Actions -->
+          <div
+            class="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 self-stretch sm:self-auto"
+          >
+            <button
+              onclick="filterVault('all')"
+              id="vault-filter-all"
+              class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all"
+            >
+              All
+            </button>
+            <button
+              onclick="filterVault('public')"
+              id="vault-filter-public"
+              class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all"
+            >
+              Public
+            </button>
+            <button
+              onclick="filterVault('unlisted')"
+              id="vault-filter-unlisted"
+              class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all"
+            >
+              Unlisted
+            </button>
+            <button
+              onclick="filterVault('private')"
+              id="vault-filter-private"
+              class="vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all"
+            >
+              Private
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid of Archives -->
+        <div
+          id="vault-archives-grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- ================= PAGE: PUBLIC HUB ================= -->
+      <div id="page-feed" class="page-view hidden space-y-6">
+        <div
+          class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        >
+          <div>
+            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="globe" class="w-6 h-6 text-indigo-400"></i>
+              Public Discovery Hub
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Explore and access public repositories, helpful resources, and
+              shared data nodes published globally.
+            </p>
+          </div>
+          <!-- Dynamic Search Node -->
+          <div class="relative w-full md:w-80">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"
+            >
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+            <input
+              type="text"
+              id="feed-search"
+              oninput="handleFeedSearch()"
+              placeholder="Search titles, metadata..."
+              class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        <!-- Public Grid -->
+        <div
+          id="feed-archives-grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- ================= PAGE: ARCHIVE DETAILED INTERACTIVE VIEWER ================= -->
+      <div id="page-viewer" class="page-view hidden space-y-6">
+        <!-- Navigation Back Header -->
+        <div class="flex items-center justify-between">
+          <button
+            onclick="navigateTo('home')"
+            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-all flex items-center gap-2"
+          >
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Safety
+          </button>
+          <div class="flex items-center gap-2">
+            <button
+              id="viewer-action-share"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all flex items-center gap-1.5"
+            >
+              <i data-lucide="share-2" class="w-4 h-4"></i> Copy Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Core Metadata Panel of Archived item -->
+        <div
+          class="bg-slate-900/50 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md space-y-6"
+        >
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
+            <div class="flex items-start gap-3.5">
+              <div
+                id="viewer-icon"
+                class="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-2xl shrink-0 mt-1"
+              >
+                <!-- Icon populated dynamically -->
+              </div>
+              <div>
+                <span
+                  id="viewer-type-badge"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-300"
+                  >File Type</span
+                >
+                <h1
+                  id="viewer-title"
+                  class="text-xl sm:text-2xl font-bold text-white mt-1.5"
+                >
+                  Loading document title...
+                </h1>
+                <div
+                  class="flex items-center gap-4 text-xs text-slate-400 mt-2 flex-wrap"
+                >
+                  <span class="flex items-center gap-1"
+                    ><i data-lucide="user" class="w-3.5 h-3.5"></i> Owner:
+                    <span
+                      id="viewer-owner-id"
+                      class="code-font text-slate-300 text-[11px]"
+                      >Loading...</span
+                    ></span
+                  >
+                  <span class="hidden sm:inline-block text-slate-700">•</span>
+                  <span class="flex items-center gap-1"
+                    ><i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    Archived:
+                    <span id="viewer-timestamp">Loading...</span></span
+                  >
+                  <span class="hidden sm:inline-block text-slate-700">•</span>
+                  <span
+                    id="viewer-visibility-indicator"
+                    class="flex items-center gap-1"
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Direct File Downloader block (Shown conditionally) -->
+            <div
+              id="viewer-file-meta-download"
+              class="hidden flex items-center gap-3 bg-slate-950/80 rounded-2xl p-4 border border-slate-800/80 self-stretch sm:self-auto"
+            >
+              <div class="text-right">
+                <p
+                  id="viewer-file-meta-name"
+                  class="text-xs font-bold text-slate-200 truncate max-w-[150px]"
+                >
+                  data-file.png
+                </p>
+                <p
+                  id="viewer-file-meta-size"
+                  class="text-[10px] text-slate-400 mt-0.5"
+                >
+                  0 KB
+                </p>
+              </div>
+              <a
+                id="viewer-download-btn"
+                href=""
+                download=""
+                class="p-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/20 transition-all shrink-0"
+              >
+                <i data-lucide="download" class="w-5 h-5"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Dynamic Content Container depending on payload type -->
+          <div
+            class="border border-slate-800 bg-slate-950 rounded-2xl overflow-hidden relative min-h-[250px] flex flex-col justify-between"
+          >
+            <!-- Top control bar of the content frame -->
+            <div
+              class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800"
+            >
+              <span
+                class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+                >Archive Payload Content</span
+              >
+              <button
+                id="viewer-copy-payload-btn"
+                class="text-slate-400 hover:text-white flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-all"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Contents
+              </button>
+            </div>
+
+            <!-- Primary content rendering view (Changes automatically depending on format) -->
+            <div class="p-6 flex-grow flex flex-col justify-center">
+              <!-- Content Render Slot: Text -->
+              <div
+                id="viewer-content-text"
+                class="hidden text-slate-200 code-font text-sm whitespace-pre-wrap leading-relaxed overflow-x-auto"
+              >
+                <!-- Populated dynamically -->
+              </div>
+
+              <!-- Content Render Slot: Link redirection mapping -->
+              <div
+                id="viewer-content-link"
+                class="hidden text-center py-8 space-y-4"
+              >
+                <div
+                  class="mx-auto w-16 h-16 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center"
+                >
+                  <i data-lucide="external-link" class="w-8 h-8"></i>
+                </div>
+                <h3 class="font-bold text-slate-200 text-lg">
+                  Mapped External Destination URL
+                </h3>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">
+                  This archive is designed to map to an external site. Click
+                  below to safety redirect onto the destination.
+                </p>
+                <a
+                  id="viewer-destination-url-link"
+                  href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-slate-100 rounded-xl text-xs font-bold transition-all"
+                >
+                  <span id="viewer-destination-text" class="truncate max-w-xs"
+                    >https://example.com</span
+                  >
+                  <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                </a>
+              </div>
+
+              <!-- Content Render Slot: Inline Media Renderer (Images) -->
+              <div
+                id="viewer-content-media"
+                class="hidden flex flex-col items-center justify-center p-2"
+              >
+                <img
+                  id="viewer-media-img"
+                  src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                  alt="Archived Preview"
+                  class="max-h-[500px] w-auto max-w-full rounded-xl border border-slate-800 shadow-xl bg-slate-900 object-contain"
+                />
+              </div>
+
+              <!-- Content Render Slot: Unsupported Non-image files -->
+              <div
+                id="viewer-content-unsupported-file"
+                class="hidden text-center py-8 space-y-3"
+              >
+                <div
+                  class="mx-auto w-16 h-16 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center"
+                >
+                  <i data-lucide="file-warning" class="w-8 h-8"></i>
+                </div>
+                <h3 class="font-bold text-slate-200 text-lg">
+                  Direct Preview Unavailable
+                </h3>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">
+                  This file type can not be natively rendered in the browser
+                  preview. Use the trigger button on the top right to download
+                  this asset directly to your device.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Site Footer -->
     <footer class="border-t border-slate-900 bg-slate-950 py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-            <div>
-                <span class="text-sm font-bold text-slate-400">&copy; 2026 VaultShare Systems Inc.</span>
-                <p class="text-xs text-slate-500 mt-1">Built to guarantee resilient micro-sharing & universal text archiving safely.</p>
-            </div>
-            <div class="flex items-center justify-center gap-4 text-xs text-slate-500">
-                <span class="hover:text-indigo-400 cursor-pointer" onclick="toggleAuthModal(true)">Security Protocol</span>
-                <span>•</span>
-                <span class="hover:text-indigo-400 cursor-pointer" onclick="toggleAuthModal(true)">My Profile</span>
-                <span>•</span>
-                <span class="hover:text-indigo-400 cursor-pointer text-indigo-400" onclick="resetDatabaseToLocal()">Reset Store</span>
-            </div>
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left"
+      >
+        <div>
+          <span class="text-sm font-bold text-slate-400"
+            >&copy; 2026 VaultShare Systems Inc.</span
+          >
+          <p class="text-xs text-slate-500 mt-1">
+            Built to guarantee resilient micro-sharing & universal text
+            archiving safely.
+          </p>
         </div>
+        <div
+          class="flex items-center justify-center gap-4 text-xs text-slate-500"
+        >
+          <span
+            class="hover:text-indigo-400 cursor-pointer"
+            onclick="toggleAuthModal(true)"
+            >Security Protocol</span
+          >
+          <span>•</span>
+          <span
+            class="hover:text-indigo-400 cursor-pointer"
+            onclick="toggleAuthModal(true)"
+            >My Profile</span
+          >
+          <span>•</span>
+          <span
+            class="hover:text-indigo-400 cursor-pointer text-indigo-400"
+            onclick="resetDatabaseToLocal()"
+            >Reset Store</span
+          >
+        </div>
+      </div>
     </footer>
 
-    <!-- Firebase System Modules Setup (Modular import) -->
+    <!-- Dedicated Supabase Storage System Logic Script -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithCustomToken, 
-            signInAnonymously, 
-            onAuthStateChanged,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signInWithPopup,
-            GoogleAuthProvider,
-            signOut
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            collection, 
-            onSnapshot, 
-            addDoc, 
-            deleteDoc,
-            query,
-            where
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-        // Global state and reference variables
-        let app, db, auth;
-        let currentUser = null;
-        let isCloudMode = false;
-        let currentArchiveType = 'text'; // 'text' | 'link' | 'file'
-        let currentSelectedFile = null; // { name, size, type, content (base64) }
-        let publicArchives = [];
-        let privateArchives = [];
-        let activeAuthTab = 'login'; // 'login' | 'register'
+      const SUPABASE_URL = "https://ybnnxjzuufgnhggpfoxt.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_URGWCt9Het9DgTNqr3Z3_g_dD6VQFjb";
 
-        // Active Real-time subscriptions tracker to prevent memory leak and safely swap users (RULE 3 compliance)
-        let activePublicListenerUnsubscribe = null;
-        let activePrivateListenerUnsubscribe = null;
+      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Application limits and thresholds
-        const MAX_FILE_SIZE_BYTES = 750 * 1024; // 750 KB
-        const MAX_TOTAL_SLOTS = 30;
-        const HOURLY_UPLOAD_LIMIT = 10;
+      // Global state and reference variables
+      let currentUser = null;
+      let currentArchiveType = "text"; // 'text' | 'link' | 'file'
+      let currentSelectedFile = null; // { name, size, type, content (base64) }
+      let publicArchives = [];
+      let privateArchives = [];
+      let activeAuthTab = "login"; // 'login' | 'register'
 
-        // Global IDs
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vault-share-prod';
+      // Application limits and thresholds
+      const MAX_FILE_SIZE_BYTES = 750 * 1024; // 750 KB
+      const MAX_TOTAL_SLOTS = 30;
+      const HOURLY_UPLOAD_LIMIT = 10;
 
-        // Check for Firebase existence variables dynamically
-        const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+      // Launch system on load
+      window.onload = async function () {
+        // Setup Lucide icons initially
+        lucide.createIcons();
 
-        // Launch system on load
-        window.onload = async function() {
-            // Setup Lucide icons initially
-            lucide.createIcons();
-            
-            // Set default view depending on Hash Routing (allows direct sharing links instantly!)
-            handleHashRouting();
-            window.addEventListener('hashchange', handleHashRouting);
-
-            // Setup File drag and drop listeners
-            setupFileHandlers();
-
-            if (firebaseConfigString) {
-                try {
-                    const firebaseConfig = JSON.parse(firebaseConfigString);
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-
-                    // Execute Auth Listener (Rule 3 compliant)
-                    setupCloudAuthObserver();
-                } catch (error) {
-                    console.error("Firebase startup failed, falling back to Local Storage mode:", error);
-                    setupLocalStorageFallback();
-                }
-            } else {
-                setupLocalStorageFallback();
-            }
+        currentUser = {
+          uid:
+            localStorage.getItem("vaultshare_user_id") ||
+            "guest_" + Math.random().toString(36).slice(2),
+          email: "guest@vaultshare.local",
+          isAnonymous: true,
         };
 
-        // Authenticate User Handler: Setup the Cloud State Observer
-        function setupCloudAuthObserver() {
-            onAuthStateChanged(auth, async (user) => {
-                // Clear active subscriptions to safely re-listen with correct credentials
-                if (activePublicListenerUnsubscribe) activePublicListenerUnsubscribe();
-                if (activePrivateListenerUnsubscribe) activePrivateListenerUnsubscribe();
+        localStorage.setItem("vaultshare_user_id", currentUser.uid);
 
-                if (user) {
-                    currentUser = user;
-                    isCloudMode = true;
-                    document.getElementById('storage-mode-badge').innerText = 'Cloud Store (Active)';
-                    document.getElementById('storage-mode-badge').className = 'text-xs font-semibold text-emerald-400 mt-0.5';
-                    
-                    // Display details
-                    updateAuthUI(user);
-                    
-                    // Activate live Firestore Listeners safely (Rule 3)
-                    initializeFirestoreListeners();
-                } else {
-                    // Sign in anonymously as default guest (Rule 3 requirement)
-                    document.getElementById('user-display-id').innerText = "Connecting Guest...";
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (err) {
-                        console.error("Anonymous authentication crash. Re-attempting:", err);
-                        await signInAnonymously(auth);
-                    }
-                }
-            });
-        }
+        document.getElementById("storage-mode-badge").innerText =
+          "Supabase Store";
+        document.getElementById("storage-mode-badge").className =
+          "text-xs font-semibold text-emerald-400 mt-0.5";
 
-        // Setup Local Storage Fallback if Firebase environment doesn't exist or errors out
-        function setupLocalStorageFallback() {
-            isCloudMode = false;
-            document.getElementById('storage-mode-badge').innerText = 'Local Storage Mode';
-            document.getElementById('storage-mode-badge').className = 'text-xs font-semibold text-amber-400 mt-0.5';
-            
-            // Get last active mock user session or generate one
-            let activeSession = JSON.parse(localStorage.getItem('vault_share_local_session'));
-            if (!activeSession) {
-                activeSession = {
-                    uid: 'guest_' + Math.random().toString(36).substr(2, 9),
-                    email: 'guest-session@vaultshare.local',
-                    isAnonymous: true,
-                    providerId: 'anonymous'
-                };
-                localStorage.setItem('vault_share_local_session', JSON.stringify(activeSession));
-            }
-            
-            currentUser = activeSession;
-            updateAuthUI(currentUser);
+        updateAuthUI(currentUser);
 
-            // Load initial datasets from LocalStorage
-            loadLocalData();
-        }
+        // Set default view depending on Hash Routing (allows direct sharing links instantly!)
+        handleHashRouting();
+        window.addEventListener("hashchange", handleHashRouting);
 
-        // Live Cloud Listeners (Rule 1 & Rule 2 compliant)
-        function initializeFirestoreListeners() {
-            if (!currentUser) return;
+        // Setup File drag and drop listeners
+        setupFileHandlers();
 
-            // Strict Collection references conforming to RULE 1
-            const publicCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'archives');
-            const privateCollectionRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'archives');
+        // Setup the Supabase auth change observer
+        setupAuthAndSync();
 
-            // Set up Realtime listener on Public/Unlisted repository
-            activePublicListenerUnsubscribe = onSnapshot(publicCollectionRef, (snapshot) => {
-                publicArchives = [];
-                snapshot.forEach((doc) => {
-                    publicArchives.push({ id: doc.id, ...doc.data() });
-                });
-                renderFeed();
-                updateActiveSlotsUsage();
-            }, (error) => {
-                console.error("Public Firestore Subscription Error:", error);
-                showToast("System error loading public hub files.", "error");
-            });
+        // Load initial datasets from Supabase
+        await loadSupabaseData();
+      };
 
-            // Set up Realtime listener on user's Private repository
-            activePrivateListenerUnsubscribe = onSnapshot(privateCollectionRef, (snapshot) => {
-                privateArchives = [];
-                snapshot.forEach((doc) => {
-                    privateArchives.push({ id: doc.id, ...doc.data() });
-                });
-                renderVault();
-                updateActiveSlotsUsage();
-            }, (error) => {
-                console.error("Private Firestore Subscription Error:", error);
-                showToast("System error loading your private vault.", "error");
-            });
-        }
-
-        // Local data loading fallback
-        function loadLocalData() {
-            const allLocalArchives = JSON.parse(localStorage.getItem('vault_share_archives') || '[]');
-            
-            // Filter lists matching user ownership
-            publicArchives = allLocalArchives.filter(a => a.visibility === 'public' || a.visibility === 'unlisted');
-            privateArchives = allLocalArchives.filter(a => a.ownerId === currentUser.uid && a.visibility === 'private');
-
-            renderVault();
-            renderFeed();
-            updateActiveSlotsUsage();
-        }
-
-        // Add Local Data to Fallback Cache
-        function saveLocalData(newArchive, isDelete = false) {
-            let allLocalArchives = JSON.parse(localStorage.getItem('vault_share_archives') || '[]');
-            
-            if (isDelete) {
-                allLocalArchives = allLocalArchives.filter(a => a.id !== newArchive.id);
-            } else {
-                const existingIndex = allLocalArchives.findIndex(a => a.id === newArchive.id);
-                if (existingIndex > -1) {
-                    allLocalArchives[existingIndex] = newArchive;
-                } else {
-                    allLocalArchives.push(newArchive);
-                }
-            }
-
-            localStorage.setItem('vault_share_archives', JSON.stringify(allLocalArchives));
-            loadLocalData();
-        }
-
-        // Rate Limit Checklist Guard
-        function verifyRateLimits() {
-            // 1. Total active items quota limit
-            const userArchivesCount = getUserTotalArchivesCount();
-            if (userArchivesCount >= MAX_TOTAL_SLOTS) {
-                showToast(`Storage slot quota exceeded. You are using ${userArchivesCount}/${MAX_TOTAL_SLOTS} active archives. Please delete an existing file to free up space.`, "error");
-                return false;
-            }
-
-            // 2. Rolling hourly throttle limit
-            const now = Date.now();
-            const hourAgo = now - (1000 * 60 * 60);
-            
-            const hourlyTracker = JSON.parse(localStorage.getItem('vault_share_hourly_uploads') || '[]');
-            const activeRecentUploads = hourlyTracker.filter(timestamp => timestamp > hourAgo);
-            
-            if (activeRecentUploads.length >= HOURLY_UPLOAD_LIMIT) {
-                showToast("Upload frequency warning. Please wait a short duration before your next archive to prevent server throttling.", "error");
-                return false;
-            }
-
-            return { activeRecentUploads };
-        }
-
-        // Log successful upload into rate-limiter
-        function recordUploadRateLimit(recentTracker) {
-            recentTracker.push(Date.now());
-            localStorage.setItem('vault_share_hourly_uploads', JSON.stringify(recentTracker));
-        }
-
-        // Total active slots indicator
-        function getUserTotalArchivesCount() {
-            const totalPublicAndUnlistedOwned = publicArchives.filter(a => a.ownerId === currentUser?.uid).length;
-            const totalPrivateOwned = privateArchives.length;
-            return totalPublicAndUnlistedOwned + totalPrivateOwned;
-        }
-
-        function updateActiveSlotsUsage() {
-            const activeSlots = getUserTotalArchivesCount();
-            document.getElementById('active-slots-count').innerText = activeSlots;
-        }
-
-
-        // ================= INTUITIVE USER AUTHENTICATION HANDLERS =================
-
-        // Open/Close Auth Control Panel
-        window.toggleAuthModal = function(show) {
-            const modal = document.getElementById('auth-modal');
-            if (show) {
-                modal.classList.remove('hidden');
-                
-                // Determine whether user is fully authenticated or guest session
-                const isAnonymous = currentUser?.isAnonymous ?? (currentUser?.uid.startsWith('guest_') || currentUser?.email.includes('guest-session'));
-                
-                if (!isAnonymous) {
-                    // Render Profile Information Dashboard
-                    document.getElementById('auth-signed-in-view').classList.remove('hidden');
-                    document.getElementById('auth-forms-view').classList.add('hidden');
-                    
-                    document.getElementById('auth-profile-id').innerText = currentUser.email || currentUser.uid;
-                    
-                    const provider = currentUser.providerData?.[0]?.providerId || (currentUser.email.includes('local') ? 'Local Database' : 'Email/Password');
-                    document.getElementById('auth-profile-provider').innerText = provider === 'google.com' ? 'Google Account' : provider;
-                } else {
-                    // Render Sign-In / Signup Panels
-                    document.getElementById('auth-signed-in-view').classList.add('hidden');
-                    document.getElementById('auth-forms-view').classList.remove('hidden');
-                    toggleAuthTab('login');
-                }
-            } else {
-                modal.classList.add('hidden');
-            }
-        };
-
-        // Switch Forms Tabs UI
-        window.toggleAuthTab = function(tab) {
-            activeAuthTab = tab;
-            const btnLogin = document.getElementById('auth-tab-login');
-            const btnRegister = document.getElementById('auth-tab-register');
-            const btnSubmitText = document.getElementById('auth-submit-text');
-
-            if (tab === 'login') {
-                btnLogin.className = 'py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white';
-                btnRegister.className = 'py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
-                btnSubmitText.innerText = "Authorize Account Node";
-            } else {
-                btnRegister.className = 'py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white';
-                btnLogin.className = 'py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
-                btnSubmitText.innerText = "Compile & Register Identity";
-            }
-        };
-
-        // UI updater for Auth Badge in Nav Header
-        function updateAuthUI(user) {
-            const userDisplay = document.getElementById('user-display-id');
-            const statusLamp = document.getElementById('user-status-lamp');
-
-            const isAnonymous = user.isAnonymous ?? (user.uid.startsWith('guest_') || user.email.includes('guest-session'));
-            
-            if (isAnonymous) {
-                userDisplay.innerText = "Guest Session";
-                statusLamp.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
-            } else {
-                userDisplay.innerText = user.email || user.uid;
-                statusLamp.className = "w-2 h-2 rounded-full bg-emerald-500";
-            }
-        }
-
-        // Email & Password Auth Dispatcher
-        window.handleCredentialsAuth = async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-
-            if (!email || password.length < 6) {
-                showToast("A valid email and password (minimum 6 characters) are required.", "error");
-                return;
-            }
-
-            const submitBtn = document.getElementById('auth-submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Verifying Credentials...";
-
-            try {
-                if (isCloudMode) {
-                    if (activeAuthTab === 'login') {
-                        await signInWithEmailAndPassword(auth, email, password);
-                        showToast("Successfully connected to VaultShare Cloud!", "success");
-                    } else {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        showToast("Account registered! Your cloud secure vault is initialized.", "success");
-                    }
-                } else {
-                    // Local Database Mock Engine
-                    handleLocalMockAuth(email, password);
-                }
-                toggleAuthModal(false);
-            } catch (err) {
-                console.error("Auth process error: ", err);
-                showToast(err.message || "Credential verification failed. Please try again.", "error");
-            } finally {
-                submitBtn.disabled = false;
-                toggleAuthTab(activeAuthTab); // Restore tab text
-            }
-        };
-
-        // Local Storage Mode Authentication Simulator
-        function handleLocalMockAuth(email, password) {
-            const localUsers = JSON.parse(localStorage.getItem('vault_share_local_users') || '[]');
-            
-            if (activeAuthTab === 'login') {
-                const userMatch = localUsers.find(u => u.email === email && u.password === password);
-                if (!userMatch) {
-                    showToast("User account not found, or invalid password matching.", "error");
-                    return;
-                }
-                
-                currentUser = {
-                    uid: userMatch.uid,
-                    email: userMatch.email,
-                    isAnonymous: false,
-                    providerId: 'password'
-                };
-            } else {
-                // Register scenario
-                const emailExists = localUsers.some(u => u.email === email);
-                if (emailExists) {
-                    showToast("This email has already been registered on this node.", "error");
-                    return;
-                }
-
-                const newUser = {
-                    uid: 'usr_' + Math.random().toString(36).substr(2, 9),
-                    email: email,
-                    password: password
-                };
-
-                localUsers.push(newUser);
-                localStorage.setItem('vault_share_local_users', JSON.stringify(localUsers));
-
-                currentUser = {
-                    uid: newUser.uid,
-                    email: newUser.email,
-                    isAnonymous: false,
-                    providerId: 'password'
-                };
-            }
-
-            // Persist active session context
-            localStorage.setItem('vault_share_local_session', JSON.stringify(currentUser));
-            updateAuthUI(currentUser);
-            loadLocalData();
-            showToast("Successfully authenticated locally!", "success");
-        }
-
-        // Trigger Google OAuth sign-in flow
-        window.triggerGoogleSignIn = async function() {
-            try {
-                if (isCloudMode) {
-                    const provider = new GoogleAuthProvider();
-                    await signInWithPopup(auth, provider);
-                    showToast("Connected securely via Google Auth!", "success");
-                } else {
-                    // Local Storage Mock Google sign-in
-                    const mockGoogleEmail = `google-auth-${Math.floor(Math.random() * 1000)}@gmail.com`;
-                    currentUser = {
-                        uid: 'google_' + Math.random().toString(36).substr(2, 9),
-                        email: mockGoogleEmail,
-                        isAnonymous: false,
-                        providerId: 'google.com'
-                    };
-                    localStorage.setItem('vault_share_local_session', JSON.stringify(currentUser));
-                    updateAuthUI(currentUser);
-                    loadLocalData();
-                    showToast("Connected securely via Simulated Google Auth!", "success");
-                }
-                toggleAuthModal(false);
-            } catch (err) {
-                console.error("Google Auth failed: ", err);
-                showToast("Google Authentication dismissed or rejected.", "error");
-            }
-        };
-
-        // Terminate active profile session
-        window.triggerSignOut = async function() {
-            try {
-                if (isCloudMode) {
-                    await signOut(auth);
-                    showToast("Successfully disconnected from cloud node.", "info");
-                } else {
-                    // Reset back to simple anonymous local guest session
-                    const fallbackGuest = {
-                        uid: 'guest_' + Math.random().toString(36).substr(2, 9),
-                        email: 'guest-session@vaultshare.local',
-                        isAnonymous: true,
-                        providerId: 'anonymous'
-                    };
-                    localStorage.setItem('vault_share_local_session', JSON.stringify(fallbackGuest));
-                    currentUser = fallbackGuest;
-                    updateAuthUI(currentUser);
-                    loadLocalData();
-                    showToast("Logged out of local account successfully.", "info");
-                }
-                toggleAuthModal(false);
-            } catch (err) {
-                console.error("Sign-out process crashed:", err);
-                showToast("Sign-out rejected.", "error");
-            }
-        };
-
-
-        // ================= BUSINESS LOGIC: PUBLISHING ARCHIVES =================
-
-        window.setArchiveType = function(type) {
-            currentArchiveType = type;
-            
-            // Toggle active status in creator tabs
-            document.querySelectorAll('.type-tab-btn').forEach(btn => {
-                btn.className = 'type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white';
-            });
-
-            const activeBtn = document.getElementById(`tab-type-${type}`);
-            if (activeBtn) {
-                activeBtn.className = 'type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow-md';
-            }
-
-            // Show active panel matching selection
-            document.querySelectorAll('.payload-panel').forEach(panel => panel.classList.add('hidden'));
-            document.getElementById(`payload-${type}-container`).classList.remove('hidden');
-        };
-
-        // Manage files setup
-        function setupFileHandlers() {
-            const dropzone = document.getElementById('file-dropzone');
-            const fileInput = document.getElementById('file-input');
-
-            dropzone.addEventListener('click', () => fileInput.click());
-
-            fileInput.addEventListener('change', (e) => {
-                handleFileSelection(e.target.files[0]);
-            });
-
-            // Drag operations
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    dropzone.classList.add('border-indigo-500', 'bg-indigo-950/20');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
-                }, false);
-            });
-
-            dropzone.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const file = dt.files[0];
-                handleFileSelection(file);
-            });
-        }
-
-        function handleFileSelection(file) {
-            if (!file) return;
-
-            if (file.size > MAX_FILE_SIZE_BYTES) {
-                showToast(`File size limit violated! selected file is ${(file.size / 1024).toFixed(1)} KB. Max size is 750 KB.`, "error");
-                return;
-            }
-
-            // Convert to base64 safely
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = function() {
-                currentSelectedFile = {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type || 'application/octet-stream',
-                    content: reader.result
-                };
-
-                // Render File Selected Card UI
-                document.getElementById('selected-file-name').innerText = file.name;
-                document.getElementById('selected-file-size').innerText = `${(file.size / 1024).toFixed(1)} KB`;
-                document.getElementById('selected-file-card').classList.remove('hidden');
-                document.getElementById('file-dropzone').classList.add('hidden');
-                
-                showToast("File processed successfully and loaded in binary cache.", "info");
+      // Listen for changes in Supabase Session (Autologin & Session state Management)
+      function setupAuthAndSync() {
+        supabase.auth.onAuthStateChange(async (event, session) => {
+          if (session && session.user) {
+            currentUser = {
+              uid: session.user.id,
+              email: session.user.email,
+              isAnonymous: false,
+              providerId: session.user.app_metadata?.provider || "email",
             };
-            reader.onerror = function() {
-                showToast("System error reading payload binary stream.", "error");
+          } else {
+            // Revert to device Guest Session
+            currentUser = {
+              uid:
+                localStorage.getItem("vaultshare_user_id") ||
+                "guest_" + Math.random().toString(36).slice(2),
+              email: "guest@vaultshare.local",
+              isAnonymous: true,
             };
+            localStorage.setItem("vaultshare_user_id", currentUser.uid);
+          }
+
+          updateAuthUI(currentUser);
+          await loadSupabaseData();
+        });
+      }
+
+      // Live cloud synchronization from Supabase table 'archives'
+      async function loadSupabaseData() {
+        const { data, error } = await supabase
+          .from("archives")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Supabase load error:", error);
+          showToast("Could not load archives from Supabase.", "error");
+          return;
         }
 
-        window.resetSelectedFile = function() {
-            currentSelectedFile = null;
-            document.getElementById('file-input').value = "";
-            document.getElementById('selected-file-card').classList.add('hidden');
-            document.getElementById('file-dropzone').classList.remove('hidden');
+        const allArchives = (data || []).map((row) => ({
+          id: row.id,
+          title: row.title,
+          type: row.type,
+          content: row.content,
+          visibility: row.visibility,
+          ownerId: row.owner_id,
+          createdAt: row.created_at,
+          fileMeta: row.file_meta,
+        }));
+
+        publicArchives = allArchives.filter(
+          (a) => a.visibility === "public" || a.visibility === "unlisted",
+        );
+        privateArchives = allArchives.filter(
+          (a) => a.ownerId === currentUser.uid && a.visibility === "private",
+        );
+
+        renderVault();
+        renderFeed();
+        updateActiveSlotsUsage();
+      }
+
+      // Supabase Database insertion utility
+      async function saveArchiveToSupabase(archivePayload) {
+        const { data, error } = await supabase
+          .from("archives")
+          .insert({
+            id: archivePayload.id,
+            title: archivePayload.title,
+            type: archivePayload.type,
+            content: archivePayload.content,
+            visibility: archivePayload.visibility,
+            owner_id: archivePayload.ownerId,
+            created_at: archivePayload.createdAt,
+            file_meta: archivePayload.fileMeta,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Supabase save error:", error);
+          showToast("Could not save archive to Supabase.", "error");
+          return null;
+        }
+
+        return {
+          id: data.id,
+          title: data.title,
+          type: data.type,
+          content: data.content,
+          visibility: data.visibility,
+          ownerId: data.owner_id,
+          createdAt: data.created_at,
+          fileMeta: data.file_meta,
+        };
+      }
+
+      // Supabase Database deletion utility
+      async function deleteArchiveFromSupabase(id) {
+        const { error } = await supabase.from("archives").delete().eq("id", id);
+
+        if (error) {
+          console.error("Supabase delete error:", error);
+          showToast("Could not delete archive.", "error");
+          return false;
+        }
+
+        return true;
+      }
+
+      // Add Local Fallback Cache Sync (maintained for offline diagnostic fallback options)
+      function saveLocalData(newArchive, isDelete = false) {
+        let allLocalArchives = JSON.parse(
+          localStorage.getItem("vault_share_archives") || "[]",
+        );
+
+        if (isDelete) {
+          allLocalArchives = allLocalArchives.filter(
+            (a) => a.id !== newArchive.id,
+          );
+        } else {
+          const existingIndex = allLocalArchives.findIndex(
+            (a) => a.id === newArchive.id,
+          );
+          if (existingIndex > -1) {
+            allLocalArchives[existingIndex] = newArchive;
+          } else {
+            allLocalArchives.push(newArchive);
+          }
+        }
+
+        localStorage.setItem(
+          "vault_share_archives",
+          JSON.stringify(allLocalArchives),
+        );
+      }
+
+      // Rate Limit Checklist Guard
+      function verifyRateLimits() {
+        const userArchivesCount = getUserTotalArchivesCount();
+        if (userArchivesCount >= MAX_TOTAL_SLOTS) {
+          showToast(
+            `Storage slot quota exceeded. You are using ${userArchivesCount}/${MAX_TOTAL_SLOTS} active archives. Please delete an existing file to free up space.`,
+            "error",
+          );
+          return false;
+        }
+
+        const now = Date.now();
+        const hourAgo = now - 1000 * 60 * 60;
+
+        const hourlyTracker = JSON.parse(
+          localStorage.getItem("vault_share_hourly_uploads") || "[]",
+        );
+        const activeRecentUploads = hourlyTracker.filter(
+          (timestamp) => timestamp > hourAgo,
+        );
+
+        if (activeRecentUploads.length >= HOURLY_UPLOAD_LIMIT) {
+          showToast(
+            "Upload frequency warning. Please wait a short duration before your next archive to prevent browser rate-limiting.",
+            "error",
+          );
+          return false;
+        }
+
+        return { activeRecentUploads };
+      }
+
+      // Log successful upload into rate-limiter
+      function recordUploadRateLimit(recentTracker) {
+        recentTracker.push(Date.now());
+        localStorage.setItem(
+          "vault_share_hourly_uploads",
+          JSON.stringify(recentTracker),
+        );
+      }
+
+      // Total active slots indicator
+      function getUserTotalArchivesCount() {
+        const totalPublicAndUnlistedOwned = publicArchives.filter(
+          (a) => a.ownerId === currentUser?.uid,
+        ).length;
+        const totalPrivateOwned = privateArchives.filter(
+          (a) => a.ownerId === currentUser?.uid,
+        ).length;
+        return totalPublicAndUnlistedOwned + totalPrivateOwned;
+      }
+
+      function updateActiveSlotsUsage() {
+        const activeSlots = getUserTotalArchivesCount();
+        document.getElementById("active-slots-count").innerText = activeSlots;
+      }
+
+      // ================= INTUITIVE USER AUTHENTICATION HANDLERS =================
+
+      // Open/Close Auth Control Panel
+      function toggleAuthModal(show) {
+        const modal = document.getElementById("auth-modal");
+        if (show) {
+          modal.classList.remove("hidden");
+
+          const isAnonymous =
+            currentUser?.isAnonymous ??
+            (currentUser?.uid.startsWith("guest_") ||
+              currentUser?.email.includes("guest-session"));
+
+          if (!isAnonymous) {
+            // Render Profile Information Dashboard
+            document
+              .getElementById("auth-signed-in-view")
+              .classList.remove("hidden");
+            document.getElementById("auth-forms-view").classList.add("hidden");
+
+            document.getElementById("auth-profile-id").innerText =
+              currentUser.email || currentUser.uid;
+            document.getElementById("auth-profile-provider").innerText =
+              currentUser.providerId === "google"
+                ? "Google Account"
+                : "Email/Password";
+          } else {
+            // Render Sign-In / Signup Panels
+            document
+              .getElementById("auth-signed-in-view")
+              .classList.add("hidden");
+            document
+              .getElementById("auth-forms-view")
+              .classList.remove("hidden");
+            toggleAuthTab("login");
+          }
+        } else {
+          modal.classList.add("hidden");
+        }
+      }
+
+      // Switch Forms Tabs UI
+      function toggleAuthTab(tab) {
+        activeAuthTab = tab;
+        const btnLogin = document.getElementById("auth-tab-login");
+        const btnRegister = document.getElementById("auth-tab-register");
+        const btnSubmitText = document.getElementById("auth-submit-text");
+
+        if (tab === "login") {
+          btnLogin.className =
+            "py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white";
+          btnRegister.className =
+            "py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+          btnSubmitText.innerText = "Authorize Account Node";
+        } else {
+          btnRegister.className =
+            "py-2 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white";
+          btnLogin.className =
+            "py-2 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+          btnSubmitText.innerText = "Compile & Register Identity";
+        }
+      }
+
+      // UI updater for Auth Badge in Nav Header
+      function updateAuthUI(user) {
+        const userDisplay = document.getElementById("user-display-id");
+        const statusLamp = document.getElementById("user-status-lamp");
+
+        const isAnonymous =
+          user.isAnonymous ??
+          (user.uid.startsWith("guest_") ||
+            user.email.includes("guest-session"));
+
+        if (isAnonymous) {
+          userDisplay.innerText = "Guest Session";
+          statusLamp.className =
+            "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+        } else {
+          userDisplay.innerText = user.email || user.uid;
+          statusLamp.className = "w-2 h-2 rounded-full bg-emerald-500";
+        }
+      }
+
+      // Email & Password Auth Dispatcher via Supabase Auth
+      async function handleCredentialsAuth(e) {
+        e.preventDefault();
+        const email = document.getElementById("auth-email").value.trim();
+        const password = document.getElementById("auth-password").value;
+
+        if (!email || password.length < 6) {
+          showToast(
+            "A valid email and password (minimum 6 characters) are required.",
+            "error",
+          );
+          return;
+        }
+
+        const submitBtn = document.getElementById("auth-submit-btn");
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Verifying Credentials...";
+
+        try {
+          if (activeAuthTab === "login") {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (error) throw error;
+            showToast("Successfully connected to VaultShare Cloud!", "success");
+          } else {
+            const { data, error } = await supabase.auth.signUp({
+              email,
+              password,
+            });
+            if (error) throw error;
+            showToast(
+              "Account registered! Your cloud secure vault is initialized.",
+              "success",
+            );
+          }
+          toggleAuthModal(false);
+        } catch (err) {
+          console.error("Supabase authentication error:", err);
+          showToast(
+            err.message || "Credential verification failed. Please try again.",
+            "error",
+          );
+        } finally {
+          submitBtn.disabled = false;
+          toggleAuthTab(activeAuthTab);
+        }
+      }
+
+      // Trigger Google OAuth sign-in flow
+      async function triggerGoogleSignIn() {
+        try {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: window.location.origin + window.location.pathname,
+            },
+          });
+          if (error) throw error;
+          showToast(
+            "Initiating Google Secure Authentication Redirect...",
+            "info",
+          );
+        } catch (err) {
+          console.error("Google Auth failed:", err);
+          showToast("Google Authentication dismissed or rejected.", "error");
+        }
+      }
+
+      // Terminate active profile session
+      async function triggerSignOut() {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          showToast("Logged out of cloud account successfully.", "info");
+        } catch (err) {
+          console.error("Sign-out crashed:", err);
+          showToast("Sign-out rejected.", "error");
+        }
+        toggleAuthModal(false);
+      }
+
+      // ================= BUSINESS LOGIC: PUBLISHING ARCHIVES =================
+
+      function setArchiveType(type) {
+        currentArchiveType = type;
+
+        // Toggle active status in creator tabs
+        document.querySelectorAll(".type-tab-btn").forEach((btn) => {
+          btn.className =
+            "type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all text-slate-400 hover:text-white";
+        });
+
+        const activeBtn = document.getElementById(`tab-type-${type}`);
+        if (activeBtn) {
+          activeBtn.className =
+            "type-tab-btn py-2.5 px-3 rounded-lg text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow-md";
+        }
+
+        // Show active panel matching selection
+        document
+          .querySelectorAll(".payload-panel")
+          .forEach((panel) => panel.classList.add("hidden"));
+        document
+          .getElementById(`payload-${type}-container`)
+          .classList.remove("hidden");
+      }
+
+      // Manage files setup
+      function setupFileHandlers() {
+        const dropzone = document.getElementById("file-dropzone");
+        const fileInput = document.getElementById("file-input");
+
+        if (dropzone) {
+          dropzone.addEventListener("click", () => fileInput.click());
+
+          // Drag operations
+          ["dragenter", "dragover"].forEach((eventName) => {
+            dropzone.addEventListener(
+              eventName,
+              (e) => {
+                e.preventDefault();
+                dropzone.classList.add("border-indigo-500", "bg-indigo-950/20");
+              },
+              false,
+            );
+          });
+
+          ["dragleave", "drop"].forEach((eventName) => {
+            dropzone.addEventListener(
+              eventName,
+              (e) => {
+                e.preventDefault();
+                dropzone.classList.remove(
+                  "border-indigo-500",
+                  "bg-indigo-950/20",
+                );
+              },
+              false,
+            );
+          });
+
+          dropzone.addEventListener("drop", (e) => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFileSelection(file);
+          });
+        }
+
+        if (fileInput) {
+          fileInput.addEventListener("change", (e) => {
+            handleFileSelection(e.target.files[0]);
+          });
+        }
+      }
+
+      function handleFileSelection(file) {
+        if (!file) return;
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          showToast(
+            `File size limit violated! selected file is ${(file.size / 1024).toFixed(1)} KB. Max size is 750 KB.`,
+            "error",
+          );
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+          currentSelectedFile = {
+            name: file.name,
+            size: file.size,
+            type: file.type || "application/octet-stream",
+            content: reader.result,
+          };
+
+          // Render File Selected Card UI
+          document.getElementById("selected-file-name").innerText = file.name;
+          document.getElementById("selected-file-size").innerText =
+            `${(file.size / 1024).toFixed(1)} KB`;
+          document
+            .getElementById("selected-file-card")
+            .classList.remove("hidden");
+          document.getElementById("file-dropzone").classList.add("hidden");
+
+          showToast(
+            "File processed successfully and loaded in binary cache.",
+            "info",
+          );
+        };
+        reader.onerror = function () {
+          showToast("System error reading payload binary stream.", "error");
+        };
+      }
+
+      function resetSelectedFile() {
+        currentSelectedFile = null;
+        document.getElementById("file-input").value = "";
+        document.getElementById("selected-file-card").classList.add("hidden");
+        document.getElementById("file-dropzone").classList.remove("hidden");
+      }
+
+      async function handlePublishArchive() {
+        if (!currentUser) {
+          showToast(
+            "Storage services initializing. Please wait and re-attempt shortly.",
+            "error",
+          );
+          return;
+        }
+
+        const limitCheckResult = verifyRateLimits();
+        if (!limitCheckResult) return;
+
+        const title = document.getElementById("archive-title").value.trim();
+        const visibility = document.querySelector(
+          'input[name="visibility"]:checked',
+        ).value;
+
+        if (!title) {
+          showToast(
+            "A clear descriptive title is required to index your archive resource.",
+            "error",
+          );
+          return;
+        }
+
+        let payloadContent = "";
+        let fileMeta = null;
+
+        if (currentArchiveType === "text") {
+          payloadContent = document
+            .getElementById("archive-text-content")
+            .value.trim();
+          if (!payloadContent) {
+            showToast(
+              "Archive body payload is blank. Add content to initialize your text node.",
+              "error",
+            );
+            return;
+          }
+        } else if (currentArchiveType === "link") {
+          payloadContent = document
+            .getElementById("archive-link-content")
+            .value.trim();
+          if (!payloadContent) {
+            showToast(
+              "No destination link was specified. Input a valid URL endpoint.",
+              "error",
+            );
+            return;
+          }
+          try {
+            new URL(payloadContent);
+          } catch (_) {
+            showToast(
+              "Malformed destination address. Include full scheme protocol (e.g. https://).",
+              "error",
+            );
+            return;
+          }
+        } else if (currentArchiveType === "file") {
+          if (!currentSelectedFile) {
+            showToast(
+              "No binary file processed. Drop an asset into the target dropzone.",
+              "error",
+            );
+            return;
+          }
+          payloadContent = currentSelectedFile.content;
+          fileMeta = {
+            name: currentSelectedFile.name,
+            size: currentSelectedFile.size,
+            type: currentSelectedFile.type,
+          };
+        }
+
+        const archiveId =
+          "arc_" +
+          Math.random().toString(36).substr(2, 9) +
+          "_" +
+          Date.now().toString(36);
+
+        const archivePayload = {
+          id: archiveId,
+          title: title,
+          type: currentArchiveType,
+          content: payloadContent,
+          visibility: visibility,
+          ownerId: currentUser.uid,
+          createdAt: Date.now(),
+          fileMeta: fileMeta,
         };
 
+        const publishButton = document.getElementById("publish-btn");
+        publishButton.disabled = true;
+        publishButton.innerText = "Processing & Archiving...";
 
-        window.handlePublishArchive = async function() {
-            if (!currentUser) {
-                showToast("Storage services initializing. Please wait and re-attempt shortly.", "error");
-                return;
-            }
+        // Save payload to Supabase and handle navigation safely
+        const savedArchive = await saveArchiveToSupabase(archivePayload);
 
-            // Check security limits prior to compiling payload
-            const limitCheckResult = verifyRateLimits();
-            if (!limitCheckResult) return;
-
-            const title = document.getElementById('archive-title').value.trim();
-            const visibility = document.querySelector('input[name="visibility"]:checked').value;
-
-            if (!title) {
-                showToast("A clear descriptive title is required to index your archive resource.", "error");
-                return;
-            }
-
-            let payloadContent = "";
-            let fileMeta = null;
-
-            if (currentArchiveType === 'text') {
-                payloadContent = document.getElementById('archive-text-content').value.trim();
-                if (!payloadContent) {
-                    showToast("Archive body payload is blank. Add content to initialize your text node.", "error");
-                    return;
-                }
-            } else if (currentArchiveType === 'link') {
-                payloadContent = document.getElementById('archive-link-content').value.trim();
-                if (!payloadContent) {
-                    showToast("No destination link was specified. Input a valid URL endpoint.", "error");
-                    return;
-                }
-                // Verify URL syntax matches schema
-                try {
-                    new URL(payloadContent);
-                } catch(_) {
-                    showToast("Malformed destination address. Include full scheme protocol (e.g. https://).", "error");
-                    return;
-                }
-            } else if (currentArchiveType === 'file') {
-                if (!currentSelectedFile) {
-                    showToast("No binary file processed. Drop an asset into the target dropzone.", "error");
-                    return;
-                }
-                payloadContent = currentSelectedFile.content; // Contains Base64 Encoded Binary safe stream
-                fileMeta = {
-                    name: currentSelectedFile.name,
-                    size: currentSelectedFile.size,
-                    type: currentSelectedFile.type
-                };
-            }
-
-            // Compile Document Entity
-            const archivePayload = {
-                title: title,
-                type: currentArchiveType,
-                content: payloadContent,
-                visibility: visibility,
-                ownerId: currentUser.uid,
-                createdAt: Date.now(),
-                fileMeta: fileMeta
-            };
-
-            const publishButton = document.getElementById('publish-btn');
-            publishButton.disabled = true;
-            publishButton.innerText = "Processing & Archiving...";
-
-            try {
-                if (isCloudMode) {
-                    // Decide target repository partition dynamically (RULE 1 Strict Pathing)
-                    if (visibility === 'private') {
-                        // User's Secure Private Vault Partition
-                        const targetDocRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'archives'));
-                        await setDoc(targetDocRef, archivePayload);
-                        archivePayload.id = targetDocRef.id;
-                    } else {
-                        // Shared Public or Unlisted Hub Partition
-                        const targetDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'archives'));
-                        await setDoc(targetDocRef, archivePayload);
-                        archivePayload.id = targetDocRef.id;
-                    }
-                } else {
-                    // Local Storage Fallback Action
-                    archivePayload.id = 'loc_' + Math.random().toString(36).substr(2, 9);
-                    saveLocalData(archivePayload);
-                }
-
-                // Complete rate limiter tally logs
-                recordUploadRateLimit(limitCheckResult.activeRecentUploads);
-
-                showToast("Archive compiled successfully & written securely to vault storage!", "success");
-                
-                // Clear forms
-                document.getElementById('archive-title').value = "";
-                document.getElementById('archive-text-content').value = "";
-                document.getElementById('archive-link-content').value = "";
-                resetSelectedFile();
-
-                // Redirect user automatically to their newly archived element preview page!
-                window.location.hash = `#view/${archivePayload.id}`;
-
-            } catch (error) {
-                console.error("Write error publishing asset to firestore:", error);
-                showToast("Storage provider rejected write request. Check limits and try again.", "error");
-            } finally {
-                publishButton.disabled = false;
-                publishButton.innerText = "Compile & Archive Resource";
-            }
-        };
-
-
-        // ================= INTERACTIVE VIEW RENDERING =================
-
-        // Helper to format timestamps gracefully
-        function formatRelativeTime(timestamp) {
-            const diff = Date.now() - timestamp;
-            const seconds = Math.floor(diff / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-
-            if (days > 0) return `${days}d ago`;
-            if (hours > 0) return `${hours}h ago`;
-            if (minutes > 0) return `${minutes}m ago`;
-            return "Just now";
+        if (!savedArchive) {
+          publishButton.disabled = false;
+          publishButton.innerText = "Compile & Archive Resource";
+          return;
         }
 
-        // HTML escaping utility for safe text injection
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        recordUploadRateLimit(limitCheckResult.activeRecentUploads);
+
+        showToast("Archive saved to Supabase!", "success");
+
+        document.getElementById("archive-title").value = "";
+        document.getElementById("archive-text-content").value = "";
+        document.getElementById("archive-link-content").value = "";
+        resetSelectedFile();
+
+        await loadSupabaseData();
+
+        publishButton.disabled = false;
+        publishButton.innerText = "Compile & Archive Resource";
+
+        window.location.hash = `#view/${savedArchive.id}`;
+      }
+
+      // ================= INTERACTIVE VIEW RENDERING =================
+
+      // Helper to format timestamps gracefully
+      function formatRelativeTime(timestamp) {
+        const diff = Date.now() - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `${days}d ago`;
+        if (hours > 0) return `${hours}h ago`;
+        if (minutes > 0) return `${minutes}m ago`;
+        return "Just now";
+      }
+
+      // HTML escaping utility for safe text injection
+      function escapeHtml(str) {
+        if (!str) return "";
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Render "My Vault" Page Content
+      function renderVault() {
+        const vaultContainer = document.getElementById("vault-archives-grid");
+        if (!vaultContainer) return;
+        const activeFilter =
+          localStorage.getItem("vault_active_filter") || "all";
+
+        // Build absolute unified array of archives owned by current user
+        const ownedPublicUnlisted = publicArchives.filter(
+          (a) => a.ownerId === currentUser?.uid,
+        );
+        const ownedPrivate = privateArchives.filter(
+          (a) => a.ownerId === currentUser?.uid,
+        );
+        let allMyArchives = [...ownedPublicUnlisted, ...ownedPrivate];
+
+        // Filter out by active filter selection
+        if (activeFilter !== "all") {
+          allMyArchives = allMyArchives.filter(
+            (a) => a.visibility === activeFilter,
+          );
         }
 
-        // Render "My Vault" Page Content
-        function renderVault() {
-            const vaultContainer = document.getElementById('vault-archives-grid');
-            const activeFilter = localStorage.getItem('vault_active_filter') || 'all';
-            
-            // Build absolute unified array of archives owned by current user
-            const ownedPublicUnlisted = publicArchives.filter(a => a.ownerId === currentUser?.uid);
-            const ownedPrivate = privateArchives;
-            let allMyArchives = [...ownedPublicUnlisted, ...ownedPrivate];
+        // Sort newest first
+        allMyArchives.sort((a, b) => b.createdAt - a.createdAt);
 
-            // Filter out by active filter selection
-            if (activeFilter !== 'all') {
-                allMyArchives = allMyArchives.filter(a => a.visibility === activeFilter);
-            }
+        // Populate quick preview list on home page
+        populateQuickRecentHomeList(allMyArchives.slice(0, 5));
 
-            // Sort newest first
-            allMyArchives.sort((a, b) => b.createdAt - a.createdAt);
-
-            // Populate quick preview list on home page
-            populateQuickRecentHomeList(allMyArchives.slice(0, 5));
-
-            if (allMyArchives.length === 0) {
-                vaultContainer.innerHTML = `
+        if (allMyArchives.length === 0) {
+          vaultContainer.innerHTML = `
                     <div class="col-span-full py-16 text-center space-y-4 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl p-6">
                         <div class="mx-auto w-12 h-12 bg-slate-800 text-slate-500 rounded-xl flex items-center justify-center">
                             <i data-lucide="package-open" class="w-6 h-6"></i>
@@ -1301,42 +1840,49 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
-                return;
-            }
-
-            vaultContainer.innerHTML = allMyArchives.map(archive => renderArchiveCardMarkup(archive)).join('');
-            lucide.createIcons();
+          lucide.createIcons();
+          return;
         }
 
-        // Generate cohesive Card Markup for index grids
-        function renderArchiveCardMarkup(archive) {
-            let badgeClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-            let badgeIcon = "globe";
-            if (archive.visibility === 'unlisted') {
-                badgeClass = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                badgeIcon = "link";
-            } else if (archive.visibility === 'private') {
-                badgeClass = "bg-purple-500/10 text-purple-400 border border-purple-500/20";
-                badgeIcon = "lock";
-            }
+        vaultContainer.innerHTML = allMyArchives
+          .map((archive) => renderArchiveCardMarkup(archive))
+          .join("");
+        lucide.createIcons();
+      }
 
-            let typeIcon = "file-text";
-            if (archive.type === 'link') typeIcon = "link-2";
-            if (archive.type === 'file') typeIcon = "paperclip";
+      // Generate cohesive Card Markup for index grids
+      function renderArchiveCardMarkup(archive) {
+        let badgeClass =
+          "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        let badgeIcon = "globe";
+        if (archive.visibility === "unlisted") {
+          badgeClass =
+            "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+          badgeIcon = "link";
+        } else if (archive.visibility === "private") {
+          badgeClass =
+            "bg-purple-500/10 text-purple-400 border border-purple-500/20";
+          badgeIcon = "lock";
+        }
 
-            const fileWeightString = archive.fileMeta ? ` • ${(archive.fileMeta.size / 1024).toFixed(1)} KB` : '';
+        let typeIcon = "file-text";
+        if (archive.type === "link") typeIcon = "link-2";
+        if (archive.type === "file") typeIcon = "paperclip";
 
-            return `
+        const fileWeightString = archive.fileMeta
+          ? ` • ${(archive.fileMeta.size / 1024).toFixed(1)} KB`
+          : "";
+
+        return `
                 <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm hover:border-slate-700/60 transition-all flex flex-col justify-between group">
                     <div class="space-y-3.5">
                         <div class="flex items-center justify-between gap-2">
                             <span class="px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 ${badgeClass}">
-                                <i data-lucide="${badgeIcon}" class="w-3 h-3"></i> ${archive.visibility}
+                                <i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i> ${archive.visibility}
                             </span>
                             <span class="text-[10px] text-slate-500 font-semibold">${formatRelativeTime(archive.createdAt)}</span>
                         </div>
-                        
+
                         <div>
                             <h3 class="font-bold text-sm text-slate-200 line-clamp-1 group-hover:text-indigo-400 transition-colors">${escapeHtml(archive.title)}</h3>
                             <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 flex items-center gap-1 code-font">
@@ -1355,49 +1901,60 @@
                     </div>
                 </div>
             `;
+      }
+
+      // Render Home page quick recent records
+      function populateQuickRecentHomeList(recentItems) {
+        const quickListContainer = document.getElementById("quick-recent-list");
+        if (!quickListContainer) return;
+        if (recentItems.length === 0) {
+          quickListContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">No active archives stored. Create one above!</div>`;
+          return;
         }
 
-        // Render Home page quick recent records
-        function populateQuickRecentHomeList(recentItems) {
-            const quickListContainer = document.getElementById('quick-recent-list');
-            if (recentItems.length === 0) {
-                quickListContainer.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">No active archives stored. Create one above!</div>`;
-                return;
-            }
-
-            quickListContainer.innerHTML = recentItems.map(item => `
+        quickListContainer.innerHTML = recentItems
+          .map(
+            (item) => `
                 <div onclick="window.location.hash = '#view/${item.id}'" class="p-3 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 rounded-xl flex items-center justify-between cursor-pointer transition-all group">
                     <div class="flex items-center gap-2 overflow-hidden">
-                        <i data-lucide="${item.type === 'file' ? 'paperclip' : item.type === 'link' ? 'link-2' : 'file-text'}" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                        <i data-lucide="${item.type === "file" ? "paperclip" : item.type === "link" ? "link-2" : "file-text"}" class="w-4 h-4 text-indigo-400 shrink-0"></i>
                         <span class="text-xs text-slate-300 font-semibold truncate group-hover:text-white">${escapeHtml(item.title)}</span>
                     </div>
                     <span class="text-[9px] text-indigo-400 uppercase font-bold tracking-wider shrink-0 bg-indigo-950/40 border border-indigo-900/40 px-1.5 py-0.5 rounded">${item.visibility}</span>
                 </div>
-            `).join('');
-            lucide.createIcons();
+            `,
+          )
+          .join("");
+        lucide.createIcons();
+      }
+
+      // Render "Public Feed" Page Content
+      function renderFeed() {
+        const feedContainer = document.getElementById("feed-archives-grid");
+        if (!feedContainer) return;
+        const searchKeyword = document
+          .getElementById("feed-search")
+          .value.toLowerCase();
+
+        // Feed isolates strictly PUBLIC visible records
+        let publicFeed = publicArchives.filter(
+          (a) => a.visibility === "public",
+        );
+
+        // Apply Search Filtering Node
+        if (searchKeyword) {
+          publicFeed = publicFeed.filter(
+            (a) =>
+              a.title.toLowerCase().includes(searchKeyword) ||
+              a.type.toLowerCase().includes(searchKeyword),
+          );
         }
 
-        // Render "Public Feed" Page Content
-        function renderFeed() {
-            const feedContainer = document.getElementById('feed-archives-grid');
-            const searchKeyword = document.getElementById('feed-search').value.toLowerCase();
+        // Sort newest first
+        publicFeed.sort((a, b) => b.createdAt - a.createdAt);
 
-            // Feed isolates strictly PUBLIC visible records
-            let publicFeed = publicArchives.filter(a => a.visibility === 'public');
-
-            // Apply Search Filtering Node
-            if (searchKeyword) {
-                publicFeed = publicFeed.filter(a => 
-                    a.title.toLowerCase().includes(searchKeyword) || 
-                    a.type.toLowerCase().includes(searchKeyword)
-                );
-            }
-
-            // Sort newest first
-            publicFeed.sort((a, b) => b.createdAt - a.createdAt);
-
-            if (publicFeed.length === 0) {
-                feedContainer.innerHTML = `
+        if (publicFeed.length === 0) {
+          feedContainer.innerHTML = `
                     <div class="col-span-full py-16 text-center space-y-4 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl p-6">
                         <div class="mx-auto w-12 h-12 bg-slate-800 text-slate-500 rounded-xl flex items-center justify-center">
                             <i data-lucide="search" class="w-6 h-6"></i>
@@ -1408,11 +1965,13 @@
                         </div>
                     </div>
                 `;
-                lucide.createIcons();
-                return;
-            }
+          lucide.createIcons();
+          return;
+        }
 
-            feedContainer.innerHTML = publicFeed.map(archive => `
+        feedContainer.innerHTML = publicFeed
+          .map(
+            (archive) => `
                 <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm hover:border-slate-700/60 transition-all flex flex-col justify-between group">
                     <div class="space-y-3.5">
                         <div class="flex items-center justify-between gap-2">
@@ -1421,11 +1980,11 @@
                             </span>
                             <span class="text-[10px] text-slate-500 font-semibold">${formatRelativeTime(archive.createdAt)}</span>
                         </div>
-                        
+
                         <div>
                             <h3 class="font-bold text-sm text-slate-200 line-clamp-1 group-hover:text-indigo-400 transition-colors">${escapeHtml(archive.title)}</h3>
                             <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 flex items-center gap-1 code-font">
-                                <i data-lucide="${archive.type === 'file' ? 'paperclip' : archive.type === 'link' ? 'link-2' : 'file-text'}" class="w-3.5 h-3.5 text-indigo-400"></i> ${archive.type}${archive.fileMeta ? ` • ${(archive.fileMeta.size / 1024).toFixed(1)} KB` : ''}
+                                <i data-lucide="${archive.type === "file" ? "paperclip" : archive.type === "link" ? "link-2" : "file-text"}" class="w-3.5 h-3.5 text-indigo-400"></i> ${archive.type}${archive.fileMeta ? ` • ${(archive.fileMeta.size / 1024).toFixed(1)} KB` : ""}
                             </p>
                         </div>
                     </div>
@@ -1437,299 +1996,347 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
-            lucide.createIcons();
+            `,
+          )
+          .join("");
+        lucide.createIcons();
+      }
+
+      function handleFeedSearch() {
+        renderFeed();
+      }
+
+      function filterVault(visibility) {
+        localStorage.setItem("vault_active_filter", visibility);
+
+        // Toggle highlight status in header filter
+        document.querySelectorAll(".vault-filter-btn").forEach((btn) => {
+          btn.className =
+            "vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all";
+        });
+
+        const activeBtn = document.getElementById(`vault-filter-${visibility}`);
+        if (activeBtn) {
+          activeBtn.className =
+            "vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all";
         }
 
-        window.handleFeedSearch = function() {
-            renderFeed();
-        };
+        renderVault();
+      }
 
-        window.filterVault = function(visibility) {
-            localStorage.setItem('vault_active_filter', visibility);
-            
-            // Toggle highlight status in header filter
-            document.querySelectorAll('.vault-filter-btn').forEach(btn => {
-                btn.className = 'vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all';
-            });
+      // ================= BUSINESS LOGIC: EXPLICIT ITEM VIEW INSPECTION =================
 
-            const activeBtn = document.getElementById(`vault-filter-${visibility}`);
-            if (activeBtn) {
-                activeBtn.className = 'vault-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all';
+      async function fetchArchiveById(id) {
+        // Check loaded public/private memory lists
+        let item =
+          publicArchives.find((a) => a.id === id) ||
+          privateArchives.find((a) => a.id === id);
+        if (item) return item;
+
+        // Direct check on Supabase
+        try {
+          const { data, error } = await supabase
+            .from("archives")
+            .select("*")
+            .eq("id", id)
+            .maybeSingle();
+
+          if (error) throw error;
+          if (data) {
+            // Enforce structural privacy parameter
+            if (
+              data.visibility === "private" &&
+              data.owner_id !== currentUser.uid
+            ) {
+              return null;
             }
-
-            renderVault();
-        };
-
-
-        // ================= BUSINESS LOGIC: EXPLICIT ITEM VIEW INSPECTION =================
-
-        async function fetchArchiveById(id) {
-            // 1. Check local arrays in priority (Works instant on active sync)
-            let item = publicArchives.find(a => a.id === id) || privateArchives.find(a => a.id === id);
-            if (item) return item;
-
-            // 2. Fetch directly from cloud databases (Rule 3 compliant, checks both partitions)
-            if (isCloudMode) {
-                try {
-                    // Try searching public hub registry first
-                    const publicDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'archives', id);
-                    const publicSnap = await getDoc(publicDocRef);
-                    if (publicSnap.exists()) {
-                        return { id: publicSnap.id, ...publicSnap.data() };
-                    }
-
-                    // Otherwise try fetching secure private vault if logged in
-                    if (currentUser) {
-                        const privateDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'archives', id);
-                        const privateSnap = await getDoc(privateDocRef);
-                        if (privateSnap.exists()) {
-                            return { id: privateSnap.id, ...privateSnap.data() };
-                        }
-                    }
-                } catch (e) {
-                    console.error("Direct document fetch crashed:", e);
-                }
-            }
-
-            return null;
-        }
-
-        async function renderDetailedViewer(id) {
-            const item = await fetchArchiveById(id);
-
-            if (!item) {
-                showToast("Archive link broken or security access unauthorized.", "error");
-                navigateTo('home');
-                return;
-            }
-
-            // Bind Shared action
-            const shareBtn = document.getElementById('viewer-action-share');
-            shareBtn.onclick = function() {
-                const targetUrl = `${window.location.origin}${window.location.pathname}#view/${item.id}`;
-                copyText(targetUrl);
-                showToast("Copied secure sharing url directly to clipboard!", "success");
+            return {
+              id: data.id,
+              title: data.title,
+              type: data.type,
+              content: data.content,
+              visibility: data.visibility,
+              ownerId: data.owner_id,
+              createdAt: data.created_at,
+              fileMeta: data.file_meta,
             };
-
-            // Setup Header Metadata elements
-            document.getElementById('viewer-title').innerText = item.title;
-            document.getElementById('viewer-owner-id').innerText = item.ownerId;
-            document.getElementById('viewer-timestamp').innerText = new Date(item.createdAt).toLocaleString();
-            document.getElementById('viewer-type-badge').innerText = item.type;
-
-            // Setup Specific visibility indicators
-            const visIndicator = document.getElementById('viewer-visibility-indicator');
-            if (item.visibility === 'public') {
-                visIndicator.innerHTML = `<span class="flex items-center gap-1 text-emerald-400"><i data-lucide="globe" class="w-3.5 h-3.5"></i> Public Hub</span>`;
-            } else if (item.visibility === 'unlisted') {
-                visIndicator.innerHTML = `<span class="flex items-center gap-1 text-amber-400"><i data-lucide="link" class="w-3.5 h-3.5"></i> Unlisted Shared Link</span>`;
-            } else {
-                visIndicator.innerHTML = `<span class="flex items-center gap-1 text-purple-400"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Private Vault</span>`;
-            }
-
-            // Hide all slots initially prior to mapping payload
-            document.getElementById('viewer-content-text').classList.add('hidden');
-            document.getElementById('viewer-content-link').classList.add('hidden');
-            document.getElementById('viewer-content-media').classList.add('hidden');
-            document.getElementById('viewer-content-unsupported-file').classList.add('hidden');
-            document.getElementById('viewer-file-meta-download').classList.add('hidden');
-
-            const copyPayloadBtn = document.getElementById('viewer-copy-payload-btn');
-            copyPayloadBtn.onclick = function() {
-                copyText(item.content);
-                showToast("Payload code segment successfully copied!", "info");
-            };
-
-            // Map type icon
-            const iconFrame = document.getElementById('viewer-icon');
-            if (item.type === 'text') {
-                iconFrame.innerHTML = `<i data-lucide="file-text" class="w-6 h-6"></i>`;
-                
-                const codeBlock = document.getElementById('viewer-content-text');
-                codeBlock.innerText = item.content;
-                codeBlock.classList.remove('hidden');
-
-            } else if (item.type === 'link') {
-                iconFrame.innerHTML = `<i data-lucide="link-2" class="w-6 h-6"></i>`;
-                
-                const linkView = document.getElementById('viewer-content-link');
-                document.getElementById('viewer-destination-text').innerText = item.content;
-                document.getElementById('viewer-destination-url-link').href = item.content;
-                linkView.classList.remove('hidden');
-
-            } else if (item.type === 'file') {
-                iconFrame.innerHTML = `<i data-lucide="paperclip" class="w-6 h-6"></i>`;
-                
-                // Show standard download header element
-                const fileMeta = item.fileMeta;
-                if (fileMeta) {
-                    document.getElementById('viewer-file-meta-name').innerText = fileMeta.name;
-                    document.getElementById('viewer-file-meta-size').innerText = `${(fileMeta.size / 1024).toFixed(1)} KB`;
-                    
-                    const dlBtn = document.getElementById('viewer-download-btn');
-                    dlBtn.href = item.content; // base64 string
-                    dlBtn.download = fileMeta.name;
-
-                    document.getElementById('viewer-file-meta-download').classList.remove('hidden');
-
-                    // If it is an image file format, support inline media previews directly!
-                    if (fileMeta.type.startsWith('image/')) {
-                        const mediaView = document.getElementById('viewer-content-media');
-                        document.getElementById('viewer-media-img').src = item.content;
-                        mediaView.classList.remove('hidden');
-                    } else {
-                        // Display unsupported placeholder (non-image files like PDFs, ZIPs, etc)
-                        document.getElementById('viewer-content-unsupported-file').classList.remove('hidden');
-                    }
-                }
-            }
-
-            lucide.createIcons();
+          }
+        } catch (error) {
+          console.warn("Direct query failed.");
         }
 
-        // Handle Archiving deletions
-        window.handleDeleteArchive = async function(id, visibility) {
-            const confirmPurge = confirm("Are you sure you want to purge this record permanently? This delete action cannot be reversed.");
-            if (!confirmPurge) return;
+        return null;
+      }
 
-            try {
-                if (isCloudMode) {
-                    if (visibility === 'private') {
-                        const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'archives', id);
-                        await deleteDoc(docRef);
-                    } else {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'archives', id);
-                        await deleteDoc(docRef);
-                    }
-                } else {
-                    saveLocalData({ id: id }, true);
-                }
+      async function renderDetailedViewer(id) {
+        const item = await fetchArchiveById(id);
 
-                showToast("Archive node purged successfully from vault registries.", "success");
-                navigateTo('vault');
+        if (!item) {
+          showToast(
+            "Archive link broken or security access unauthorized.",
+            "error",
+          );
+          navigateTo("home");
+          return;
+        }
 
-            } catch (error) {
-                console.error("Purge crashed:", error);
-                showToast("Purge operations failed. Storage access unauthorized.", "error");
-            }
+        // Bind Shared action
+        const shareBtn = document.getElementById("viewer-action-share");
+        shareBtn.onclick = function () {
+          const targetUrl = `${window.location.origin}${window.location.pathname}#view/${item.id}`;
+          copyText(targetUrl);
+          showToast(
+            "Copied secure sharing url directly to clipboard!",
+            "success",
+          );
         };
 
+        // Setup Header Metadata elements
+        document.getElementById("viewer-title").innerText = item.title;
+        document.getElementById("viewer-owner-id").innerText = item.ownerId;
+        document.getElementById("viewer-timestamp").innerText = new Date(
+          item.createdAt,
+        ).toLocaleString();
+        document.getElementById("viewer-type-badge").innerText = item.type;
 
-        // ================= APPLICATION ROUTING SYSTEMS =================
-
-        function navigateTo(pageId) {
-            // Update Active Hash Router silently
-            if (pageId === 'home') window.location.hash = '';
-            else if (pageId === 'vault') window.location.hash = '#vault';
-            else if (pageId === 'feed') window.location.hash = '#feed';
+        // Setup Specific visibility indicators
+        const visIndicator = document.getElementById(
+          "viewer-visibility-indicator",
+        );
+        if (item.visibility === "public") {
+          visIndicator.innerHTML = `<span class="flex items-center gap-1 text-emerald-400"><i data-lucide="globe" class="w-3.5 h-3.5"></i> Public Hub</span>`;
+        } else if (item.visibility === "unlisted") {
+          visIndicator.innerHTML = `<span class="flex items-center gap-1 text-amber-400"><i data-lucide="link" class="w-3.5 h-3.5"></i> Unlisted Shared Link</span>`;
+        } else {
+          visIndicator.innerHTML = `<span class="flex items-center gap-1 text-purple-400"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Private Vault</span>`;
         }
 
-        function handleHashRouting() {
-            const currentHash = window.location.hash;
+        // Hide all slots initially prior to mapping payload
+        document.getElementById("viewer-content-text").classList.add("hidden");
+        document.getElementById("viewer-content-link").classList.add("hidden");
+        document.getElementById("viewer-content-media").classList.add("hidden");
+        document
+          .getElementById("viewer-content-unsupported-file")
+          .classList.add("hidden");
+        document
+          .getElementById("viewer-file-meta-download")
+          .classList.add("hidden");
 
-            // Deactivate all views
-            document.querySelectorAll('.page-view').forEach(view => view.classList.add('hidden'));
-            
-            // Remove active highlighting from nav headers
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
-                btn.classList.add('text-slate-300');
-            });
+        const copyPayloadBtn = document.getElementById(
+          "viewer-copy-payload-btn",
+        );
+        copyPayloadBtn.onclick = function () {
+          copyText(item.content);
+          showToast("Payload code segment successfully copied!", "info");
+        };
 
-            if (currentHash.startsWith('#view/')) {
-                // Shared landing view parser
-                const targetArchiveId = currentHash.replace('#view/', '');
-                document.getElementById('page-viewer').classList.remove('hidden');
-                renderDetailedViewer(targetArchiveId);
-            } else if (currentHash === '#vault') {
-                document.getElementById('page-vault').classList.remove('hidden');
-                setNavButtonActive('vault');
-                renderVault();
-            } else if (currentHash === '#feed') {
-                document.getElementById('page-feed').classList.remove('hidden');
-                setNavButtonActive('feed');
-                renderFeed();
+        // Map type icon
+        const iconFrame = document.getElementById("viewer-icon");
+        if (item.type === "text") {
+          iconFrame.innerHTML = `<i data-lucide="file-text" class="w-6 h-6"></i>`;
+
+          const codeBlock = document.getElementById("viewer-content-text");
+          codeBlock.innerText = item.content;
+          codeBlock.classList.remove("hidden");
+        } else if (item.type === "link") {
+          iconFrame.innerHTML = `<i data-lucide="link-2" class="w-6 h-6"></i>`;
+
+          const linkView = document.getElementById("viewer-content-link");
+          document.getElementById("viewer-destination-text").innerText =
+            item.content;
+          document.getElementById("viewer-destination-url-link").href =
+            item.content;
+          linkView.classList.remove("hidden");
+        } else if (item.type === "file") {
+          iconFrame.innerHTML = `<i data-lucide="paperclip" class="w-6 h-6"></i>`;
+
+          // Show standard download header element
+          const fileMeta = item.fileMeta;
+          if (fileMeta) {
+            document.getElementById("viewer-file-meta-name").innerText =
+              fileMeta.name;
+            document.getElementById("viewer-file-meta-size").innerText =
+              `${(fileMeta.size / 1024).toFixed(1)} KB`;
+
+            const dlBtn = document.getElementById("viewer-download-btn");
+            dlBtn.href = item.content; // base64 string
+            dlBtn.download = fileMeta.name;
+
+            document
+              .getElementById("viewer-file-meta-download")
+              .classList.remove("hidden");
+
+            // If it is an image file format, support inline media previews directly!
+            if (fileMeta.type.startsWith("image/")) {
+              const mediaView = document.getElementById("viewer-content-media");
+              document.getElementById("viewer-media-img").src = item.content;
+              mediaView.classList.remove("hidden");
             } else {
-                // Home Landing Creation view
-                document.getElementById('page-home').classList.remove('hidden');
-                setNavButtonActive('home');
+              // Display unsupported placeholder (non-image files like PDFs, ZIPs, etc)
+              document
+                .getElementById("viewer-content-unsupported-file")
+                .classList.remove("hidden");
             }
+          }
         }
 
-        function setNavButtonActive(tabName) {
-            const targetBtn = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
-            if (targetBtn) {
-                targetBtn.classList.remove('text-slate-300');
-                targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
-            }
+        lucide.createIcons();
+      }
+
+      // Handle Archiving deletions
+      async function handleDeleteArchive(id, visibility) {
+        const confirmPurge = confirm(
+          "Are you sure you want to purge this record permanently? This delete action cannot be reversed.",
+        );
+        if (!confirmPurge) return;
+
+        const deleted = await deleteArchiveFromSupabase(id);
+
+        if (!deleted) {
+          return;
         }
 
+        showToast("Archive deleted from Supabase.", "success");
+        await loadSupabaseData();
+        navigateTo("vault");
+      }
 
-        // ================= UTILITIES & PLUGINS =================
+      // ================= APPLICATION ROUTING SYSTEMS =================
 
-        // Clipboard Copy Command compliant fallback
-        function copyText(text) {
-            const input = document.createElement('textarea');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
+      function navigateTo(pageId) {
+        // Update Active Hash Router silently
+        if (pageId === "home") window.location.hash = "";
+        else if (pageId === "vault") window.location.hash = "#vault";
+        else if (pageId === "feed") window.location.hash = "#feed";
+      }
+
+      function handleHashRouting() {
+        const currentHash = window.location.hash;
+
+        // Deactivate all views
+        document
+          .querySelectorAll(".page-view")
+          .forEach((view) => view.classList.add("hidden"));
+
+        // Remove active highlighting from nav headers
+        document.querySelectorAll(".nav-btn").forEach((btn) => {
+          btn.classList.remove("bg-indigo-600", "text-white", "shadow-md");
+          btn.classList.add("text-slate-300");
+        });
+
+        if (currentHash.startsWith("#view/")) {
+          // Shared landing view parser
+          const targetArchiveId = currentHash.replace("#view/", "");
+          document.getElementById("page-viewer").classList.remove("hidden");
+          renderDetailedViewer(targetArchiveId);
+        } else if (currentHash === "#vault") {
+          document.getElementById("page-vault").classList.remove("hidden");
+          setNavButtonActive("vault");
+          renderVault();
+        } else if (currentHash === "#feed") {
+          document.getElementById("page-feed").classList.remove("hidden");
+          setNavButtonActive("feed");
+          renderFeed();
+        } else {
+          // Home Landing Creation view
+          document.getElementById("page-home").classList.remove("hidden");
+          setNavButtonActive("home");
+        }
+      }
+
+      function setNavButtonActive(tabName) {
+        const targetBtn = document.querySelector(
+          `.nav-btn[data-tab="${tabName}"]`,
+        );
+        if (targetBtn) {
+          targetBtn.classList.remove("text-slate-300");
+          targetBtn.classList.add("bg-indigo-600", "text-white", "shadow-md");
+        }
+      }
+
+      // ================= UTILITIES & PLUGINS =================
+
+      // Clipboard Copy Command compliant fallback
+      function copyText(text) {
+        const input = document.createElement("textarea");
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+
+      // Custom Toast Engine
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        let borderTheme = "border-slate-800 bg-slate-900 text-slate-100";
+        let iconCode = "info";
+
+        if (type === "success") {
+          borderTheme = "border-emerald-500/20 bg-slate-900 text-emerald-300";
+          iconCode = "badge-check";
+        } else if (type === "error") {
+          borderTheme = "border-rose-500/20 bg-slate-900 text-rose-300";
+          iconCode = "alert-circle";
         }
 
-        // Custom Toast Engine
-        function showToast(message, type = "info") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let borderTheme = "border-slate-800 bg-slate-900 text-slate-100";
-            let iconCode = "info";
-
-            if (type === "success") {
-                borderTheme = "border-emerald-500/20 bg-slate-900 text-emerald-300";
-                iconCode = "badge-check";
-            } else if (type === "error") {
-                borderTheme = "border-rose-500/20 bg-slate-900 text-rose-300";
-                iconCode = "alert-circle";
-            }
-
-            toast.className = `p-4 rounded-xl border ${borderTheme} shadow-2xl flex items-start gap-3 pointer-events-auto transition-all transform translate-y-2 opacity-0 duration-300`;
-            toast.innerHTML = `
+        toast.className = `p-4 rounded-xl border ${borderTheme} shadow-2xl flex items-start gap-3 pointer-events-auto transition-all transform translate-y-2 opacity-0 duration-300`;
+        toast.innerHTML = `
                 <i data-lucide="${iconCode}" class="w-5 h-5 shrink-0"></i>
                 <div class="text-xs font-semibold leading-relaxed">${escapeHtml(message)}</div>
             `;
 
-            container.appendChild(toast);
-            lucide.createIcons();
+        container.appendChild(toast);
+        lucide.createIcons();
 
-            // Trigger enter animations
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
+        // Trigger enter animations
+        setTimeout(() => {
+          toast.classList.remove("translate-y-2", "opacity-0");
+        }, 10);
 
-            // Close after threshold timer
-            setTimeout(() => {
-                toast.classList.add('opacity-0', '-translate-y-2');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 5000);
+        // Close after threshold timer
+        setTimeout(() => {
+          toast.classList.add("opacity-0", "-translate-y-2");
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 5000);
+      }
+
+      // Admin Reset function to flush Local Cache records
+      function resetDatabaseToLocal() {
+        const confirmReset = confirm(
+          "Are you sure you want to completely restore default parameters and flush local storage data?",
+        );
+        if (confirmReset) {
+          localStorage.removeItem("vault_share_archives");
+          localStorage.removeItem("vault_share_hourly_uploads");
+          localStorage.removeItem("vault_share_local_session");
+          localStorage.removeItem("vault_share_local_users");
+          showToast(
+            "Cleared cache storage tables successfully. Re-syncing database...",
+            "info",
+          );
+          setTimeout(() => window.location.reload(), 1000);
         }
+      }
 
-        // Admin Reset function to flush Local Cache records
-        window.resetDatabaseToLocal = function() {
-            const confirmReset = confirm("Are you sure you want to completely restore default parameters and flush local storage data?");
-            if (confirmReset) {
-                localStorage.removeItem('vault_share_archives');
-                localStorage.removeItem('vault_share_hourly_uploads');
-                localStorage.removeItem('vault_share_local_session');
-                localStorage.removeItem('vault_share_local_users');
-                showToast("Cleared cache storage tables successfully. Re-syncing database...", "info");
-                setTimeout(() => window.location.reload(), 1000);
-            }
-        };
-
+      // Export Actions explicitly to Window space for Module Compatibility
+      window.navigateTo = navigateTo;
+      window.toggleAuthModal = toggleAuthModal;
+      window.toggleAuthTab = toggleAuthTab;
+      window.handleCredentialsAuth = handleCredentialsAuth;
+      window.triggerGoogleSignIn = triggerGoogleSignIn;
+      window.triggerSignOut = triggerSignOut;
+      window.setArchiveType = setArchiveType;
+      window.resetSelectedFile = resetSelectedFile;
+      window.handlePublishArchive = handlePublishArchive;
+      window.handleFeedSearch = handleFeedSearch;
+      window.filterVault = filterVault;
+      window.handleDeleteArchive = handleDeleteArchive;
+      window.resetDatabaseToLocal = resetDatabaseToLocal;
     </script>
-</body>
+  </body>
 </html>
