@@ -1203,20 +1203,25 @@
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.error("Supabase load error:", error);
-          showToast("Could not load archives from Supabase.", "error");
+          console.error(
+            "Supabase load error details:",
+            JSON.stringify(error, null, 2),
+          );
+          showToast(`Could not load archives: ${error.message}`, "error");
           return;
         }
 
+        // Maps both snake_case and camelCase column formats safely
         const allArchives = (data || []).map((row) => ({
           id: row.id,
           title: row.title,
           type: row.type,
           content: row.content,
           visibility: row.visibility,
-          ownerId: row.owner_id,
-          createdAt: row.created_at,
-          fileMeta: row.file_meta,
+          ownerId: row.owner_id !== undefined ? row.owner_id : row.ownerId,
+          createdAt:
+            row.created_at !== undefined ? row.created_at : row.createdAt,
+          fileMeta: row.file_meta !== undefined ? row.file_meta : row.fileMeta,
         }));
 
         publicArchives = allArchives.filter(
@@ -1231,11 +1236,20 @@
         updateActiveSlotsUsage();
       }
 
-      // Supabase Database insertion utility
+      // Multi-Configuration insertion adapter to support case-sensitive, camelCase, snake_case, and custom date types cleanly
       async function saveArchiveToSupabase(archivePayload) {
-        const { data, error } = await supabase
-          .from("archives")
-          .insert({
+        async function executeInsert(insertObject) {
+          return await supabase
+            .from("archives")
+            .insert(insertObject)
+            .select()
+            .maybeSingle();
+        }
+
+        // We compile sequential trial payloads representing different schema structures
+        const insertionPayloads = [
+          // Option A: Standard snake_case fields + millisecond bigints
+          {
             id: archivePayload.id,
             title: archivePayload.title,
             type: archivePayload.type,
@@ -1244,26 +1258,75 @@
             owner_id: archivePayload.ownerId,
             created_at: archivePayload.createdAt,
             file_meta: archivePayload.fileMeta,
-          })
-          .select()
-          .single();
+          },
+          // Option B: Standard snake_case fields + standard ISO Datetime values
+          {
+            id: archivePayload.id,
+            title: archivePayload.title,
+            type: archivePayload.type,
+            content: archivePayload.content,
+            visibility: archivePayload.visibility,
+            owner_id: archivePayload.ownerId,
+            created_at: new Date(archivePayload.createdAt).toISOString(),
+            file_meta: archivePayload.fileMeta,
+          },
+          // Option C: Case-sensitive camelCase fields + millisecond bigints
+          {
+            id: archivePayload.id,
+            title: archivePayload.title,
+            type: archivePayload.type,
+            content: archivePayload.content,
+            visibility: archivePayload.visibility,
+            ownerId: archivePayload.ownerId,
+            createdAt: archivePayload.createdAt,
+            fileMeta: archivePayload.fileMeta,
+          },
+          // Option D: Case-sensitive camelCase fields + standard ISO Datetime values
+          {
+            id: archivePayload.id,
+            title: archivePayload.title,
+            type: archivePayload.type,
+            content: archivePayload.content,
+            visibility: archivePayload.visibility,
+            ownerId: archivePayload.ownerId,
+            createdAt: new Date(archivePayload.createdAt).toISOString(),
+            fileMeta: archivePayload.fileMeta,
+          },
+        ];
 
-        if (error) {
-          console.error("Supabase save error:", error);
-          showToast("Could not save archive to Supabase.", "error");
-          return null;
+        let finalError = null;
+
+        for (let i = 0; i < insertionPayloads.length; i++) {
+          const { data, error } = await executeInsert(insertionPayloads[i]);
+          if (!error && data) {
+            return {
+              id: data.id,
+              title: data.title,
+              type: data.type,
+              content: data.content,
+              visibility: data.visibility,
+              ownerId:
+                data.owner_id !== undefined ? data.owner_id : data.ownerId,
+              createdAt:
+                data.created_at !== undefined
+                  ? data.created_at
+                  : data.createdAt,
+              fileMeta:
+                data.file_meta !== undefined ? data.file_meta : data.fileMeta,
+            };
+          }
+          finalError = error;
         }
 
-        return {
-          id: data.id,
-          title: data.title,
-          type: data.type,
-          content: data.content,
-          visibility: data.visibility,
-          ownerId: data.owner_id,
-          createdAt: data.created_at,
-          fileMeta: data.file_meta,
-        };
+        console.error(
+          "Supabase write operations failed on all configurations. Diagnostic logs:",
+          JSON.stringify(finalError, null, 2),
+        );
+        showToast(
+          `Supabase save error: ${finalError.message}. details: ${finalError.details || "None"}`,
+          "error",
+        );
+        return null;
       }
 
       // Supabase Database deletion utility
@@ -1271,8 +1334,11 @@
         const { error } = await supabase.from("archives").delete().eq("id", id);
 
         if (error) {
-          console.error("Supabase delete error:", error);
-          showToast("Could not delete archive.", "error");
+          console.error(
+            "Supabase delete error details:",
+            JSON.stringify(error, null, 2),
+          );
+          showToast(`Supabase delete error: ${error.message}`, "error");
           return false;
         }
 
@@ -2046,7 +2112,8 @@
             // Enforce structural privacy parameter
             if (
               data.visibility === "private" &&
-              data.owner_id !== currentUser.uid
+              data.owner_id !== currentUser.uid &&
+              data.ownerId !== currentUser.uid
             ) {
               return null;
             }
@@ -2056,9 +2123,14 @@
               type: data.type,
               content: data.content,
               visibility: data.visibility,
-              ownerId: data.owner_id,
-              createdAt: data.created_at,
-              fileMeta: data.file_meta,
+              ownerId:
+                data.owner_id !== undefined ? data.owner_id : data.ownerId,
+              createdAt:
+                data.created_at !== undefined
+                  ? data.created_at
+                  : data.createdAt,
+              fileMeta:
+                data.file_meta !== undefined ? data.file_meta : data.fileMeta,
             };
           }
         } catch (error) {
